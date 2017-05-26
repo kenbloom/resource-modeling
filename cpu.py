@@ -1,8 +1,12 @@
+#! /usr/bin/env python
+
+from __future__ import division
+
 import sys
 import collections
 import matplotlib.pyplot as plt
 import numpy as np
-
+import json
 
 # Basic parameters
 kilo = 1000
@@ -12,18 +16,28 @@ tera = 1000 * giga
 peta = 1000 * tera
 seconds_per_year = 86400 * 365
 
-mc_factor = 2
+# Load base parameters
+with open('BaseModel.json', 'r') as baseFile:
+    model = json.load(baseFile)
+
+# Load and apply model parameters
+with open('RealisticModel.json') as modelFile:
+    modelChanges = json.load(modelFile)
+
+model.update(modelChanges)
+
+mc_factor = model['mc_event_factor']
 software_improvement_factor = float(sys.argv[1])
 cpu_improvement_factor = float(sys.argv[2])
 retirement_rate = 0.05
 
 # The very important list of years
-years = range(2017,2028)
+years = list(range(model['start_year'], model['end_year']+1))
 # Annyoing kludge for later plotting
 plotyears = [x-0.5 for x in years]
-plotyears.append(2027.5)
+plotyears.append(model['end_year'] + 0.5)
 
-software_improvement = {i : software_improvement_factor ** (i-2017)
+software_improvement = {i : software_improvement_factor ** (i + 1 - model['start_year'])
                             for i in years}
 
 # LHC processing times as of 2017; these need verification
@@ -46,12 +60,11 @@ sim_time = {i : (mc_gensim_time_lhc + mc_digi_time_lhc + mc_reco_time_lhc)
 
 # ...but for 2026 and 2027, override this with the HL-LHC numbers!
 # (sorry about the kludge)
-reco_time[2026] = data_reco_time_hllhc/software_improvement[2026]
-reco_time[2027] = data_reco_time_hllhc/software_improvement[2027]
-sim_time[2026] = (mc_gensim_time_hllhc + mc_digi_time_hllhc +
-                      mc_reco_time_hllhc)/software_improvement[2026]
-sim_time[2027] = (mc_gensim_time_hllhc + mc_digi_time_hllhc +
-                      mc_reco_time_hllhc)/software_improvement[2027]
+
+for year in range(model['hl_start_year'], model['end_year']+1):
+    reco_time[year] = data_reco_time_hllhc/software_improvement[year]
+    sim_time[year] = (mc_gensim_time_hllhc + mc_digi_time_hllhc +
+                      mc_reco_time_hllhc)/software_improvement[year]
 
 # Running time: assume that running years (full years)
 # are all the same number of seconds, shutdown years are zero
