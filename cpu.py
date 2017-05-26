@@ -91,6 +91,13 @@ data_cpu_time = {i : data_events[i] * reco_time[i] for i in years}
 mc_cpu_time = {i : mc_events[i] * sim_time[i] for i in years}
 total_cpu_time = {i : data_cpu_time[i] + mc_cpu_time[i] for i in years}
 
+# Write out the number of events per year for use in other models
+eventCounts = {}
+with open('EventCounts.json', 'w') as eventFile:
+    eventCounts['data'] = data_events
+    eventCounts['mc'] = mc_events
+    json.dump(eventCounts, eventFile, indent=1, sort_keys=True)
+
 # Then, CPU availability calculations.  This follows the "Available CPU
 # power" spreadsheet.  Take a baseline value of 1.4 MHS06 in 2016, in
 # future years subtract 5% of the previous for retirements, and add 300
