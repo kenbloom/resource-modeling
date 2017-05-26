@@ -7,6 +7,7 @@ import collections
 import matplotlib.pyplot as plt
 import numpy as np
 import json
+from configure import configure
 
 # Basic parameters
 kilo = 1000
@@ -16,15 +17,7 @@ tera = 1000 * giga
 peta = 1000 * tera
 seconds_per_year = 86400 * 365
 
-# Load base parameters
-with open('BaseModel.json', 'r') as baseFile:
-    model = json.load(baseFile)
-
-# Load and apply model parameters
-with open('RealisticModel.json') as modelFile:
-    modelChanges = json.load(modelFile)
-
-model.update(modelChanges)
+model = configure('RealisticModel.json')
 
 mc_factor = model['mc_event_factor']
 software_improvement_factor = float(sys.argv[1])
