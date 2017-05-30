@@ -1,3 +1,8 @@
 {
-  "mc_event_factor": 2.0
+  "mc_event_factor": 2.0,
+  "tier_size": {
+    "AOD": 1e6,
+    "MINIAOD": 100e3,
+    "MICROAOD": 1e3
+  }
 }
