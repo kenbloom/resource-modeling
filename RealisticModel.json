@@ -1,5 +1,58 @@
 {
  "mc_event_factor": 2.0, 
+ "storage_model": {
+  "disk_replicas": {
+   "AOD": [
+    0.2, 
+    0, 
+    0
+   ], 
+   "MICROAOD": [
+    5, 
+    3, 
+    1
+   ], 
+   "MINIAOD": [
+    1, 
+    0.5, 
+    0
+   ]
+  }, 
+  "tape_replicas": {
+   "AOD": [
+    1, 
+    1, 
+    1
+   ], 
+   "MICROAOD": [
+    1, 
+    1, 
+    1
+   ], 
+   "MINIAOD": [
+    1, 
+    1, 
+    1
+   ]
+  }, 
+  "versions": {
+   "AOD": [
+    1, 
+    1, 
+    0
+   ], 
+   "MICROAOD": [
+    10, 
+    5, 
+    5
+   ], 
+   "MINIAOD": [
+    2, 
+    1, 
+    0
+   ]
+  }
+ }, 
  "tier_size": {
   "AOD": 1000000.0, 
   "MICROAOD": 1000.0, 
