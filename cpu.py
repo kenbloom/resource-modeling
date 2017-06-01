@@ -106,7 +106,7 @@ with open('EventCounts.json', 'w') as eventFile:
 cpu_improvement = {i : cpu_improvement_factor ** (i-2017) for i in years}
 
 cpu_capacity = {2016 : 1.4 * mega}
-print cpu_capacity
+
 for i in years:
     cpu_capacity[i] = cpu_capacity[i-1] * (1 - retirement_rate) + (300 if i < 2020 else 600) * kilo * cpu_improvement[i]
 del cpu_capacity[2016]    
