@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from __future__ import division
+from __future__ import print_function
 
 import sys
 import collections
@@ -16,6 +17,7 @@ giga = 1000 * mega
 tera = 1000 * giga
 peta = 1000 * tera
 seconds_per_year = 86400 * 365
+running_time = 7.8E06
 
 model = configure('RealisticModel.json')
 
@@ -63,7 +65,7 @@ for year in range(model['hl_start_year'], model['end_year']+1):
 # are all the same number of seconds, shutdown years are zero
 # 2026 is a little kludgy, it's a half year?
 
-data_seconds = {i : 7.8E06 for i in years}
+data_seconds = {i : running_time for i in years}
 data_seconds[2019] = 0
 data_seconds[2020] = 0
 data_seconds[2024] = 0
@@ -76,13 +78,26 @@ trigger_rate = {i : 1.0 * kilo for i in years}
 trigger_rate[2026] = 10.0 * kilo
 trigger_rate[2027] = 10.0 * kilo
 
-# CPU time requirement calculations
+# CPU time requirement calculations, in HS06 * s
 
 data_events = {i : data_seconds[i] * trigger_rate[i] for i in years}
 mc_events = {i : data_events[i] * mc_factor for i in years}
+
 data_cpu_time = {i : data_events[i] * reco_time[i] for i in years}
 mc_cpu_time = {i : mc_events[i] * sim_time[i] for i in years}
-total_cpu_time = {i : data_cpu_time[i] + mc_cpu_time[i] for i in years}
+
+# The data need to be reconstructed about as quickly as we record them.
+# The corresponding MC, on the other hand, can be reconstructed over an
+# entire year.  We can use this to calculate the HS06 needed to do those
+# tasks.
+
+data_cpu_required = {i : data_cpu_time[i] / running_time for i in years}
+mc_cpu_required = {i : mc_cpu_time[i] / seconds_per_year for i in years}
+
+
+total_cpu_required = {i : data_cpu_required[i] + mc_cpu_required[i] for i in years}
+
+
 
 # Write out the number of events per year for use in other models
 eventCounts = {}
@@ -119,19 +134,22 @@ del cpu_capacity[2016]
 #cpu_capacity[2026] *= 2
 #cpu_capacity[2027] *= 2
 
-for i in years: print i, '{:04.3f}'.format((data_cpu_time[i] +
-    mc_cpu_time[i]) / tera), '{:04.3f}'.format(cpu_capacity[i] *
-    seconds_per_year / tera), 'THS06', '{:04.3f}'.format((data_cpu_time[i] +
-    mc_cpu_time[i])/(cpu_capacity[i] *
-    seconds_per_year))
+#for i in years: print i, '{:04.3f}'.format((data_cpu_required[i] +
+#    mc_cpu_required[i]) / mega), '{:04.3f}'.format(cpu_capacity[i] / mega), 'MHS06', '{:04.3f}'.format((data_cpu_required[i] + mc_cpu_required[i])/(cpu_capacity[i]))
+
+for i in years:
+    print(i, '{:04.3f}'.format(data_cpu_required[i] / mega),
+    '{:04.3f}'.format(mc_cpu_required[i] / mega),
+    '{:04.3f}'.format(cpu_capacity[i] / mega), 'MHS06',
+    '{:04.3f}'.format((data_cpu_required[i] + mc_cpu_required[i])/
+                          (cpu_capacity[i])))
 
 # Try to plot this
 
-plt.hist(years, plotyears, 
-             weights=[v*seconds_per_year/tera for v in cpu_capacity.values()],
+plt.hist(years, plotyears, weights=[v/mega for v in cpu_capacity.values()],
              rwidth=0.8)
-plt.plot(years, [v/tera for v in total_cpu_time.values()])
-plt.ylabel('THS06s')
+plt.plot(years, [v/mega for v in total_cpu_required.values()])
+plt.ylabel('MHS06')
 plt.xlabel('Year')
 plt.title('CPU improvement ' + sys.argv[1] +
               ' Software improvement = ' + sys.argv[2])
