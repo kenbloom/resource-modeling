@@ -67,33 +67,21 @@ for year in YEARS:
 diskByTierYear = [[0 for _i in range(len(TIERS))] for _j in YEARS]
 tapeByTierYear = [[0 for _i in range(len(TIERS))] for _j in YEARS]
 
-print("Data on disk by year and tier")
 for year, dataDict in dataOnDisk.items():
-    yearTotal = 0
-    print(" %s" % year)
     for dataType, tierDict in dataDict.items():
         for tier, size in tierDict.items():
             diskByTierYear[YEARS.index(year)][TIERS.index(tier)] += size / PETA
-            yearTotal += size
-            print("  %10s (%4s): %10.3f PB" % (tier, dataType, size / PETA))
-    print("              Total: %10.3f PB" % (yearTotal / PETA))
+
+for year, dataDict in dataOnTape.items():
+    for dataType, tierDict in dataDict.items():
+        for tier, size in tierDict.items():
+            tapeByTierYear[YEARS.index(year)][TIERS.index(tier)] += size / PETA
 
 diskFrame = pd.DataFrame(diskByTierYear, columns=TIERS, index=YEARS)
 ax = diskFrame.plot(kind='bar', stacked=True)
 ax.set(ylabel='PB on disk')
 fig = ax.get_figure()
 fig.savefig('Disk by Tier.png')
-
-print("Data on tape by year and tier")
-for year, dataDict in dataOnTape.items():
-    yearTotal = 0
-    print(" %s" % year)
-    for dataType, tierDict in dataDict.items():
-        for tier, size in tierDict.items():
-            tapeByTierYear[YEARS.index(year)][TIERS.index(tier)] += size / PETA
-            yearTotal += size
-            print("  %10s (%4s): %10.3f PB" % (tier, dataType, size / PETA))
-    print("              Total: %10.3f PB" % (yearTotal / PETA))
 
 tapeFrame = pd.DataFrame(tapeByTierYear, columns=TIERS, index=YEARS)
 ax = tapeFrame.plot(kind='bar', stacked=True)
