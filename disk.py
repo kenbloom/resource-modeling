@@ -47,14 +47,14 @@ for year in YEARS:
     for producedYear, dataDict in dataProduced.items():
         for dataType, tierDict in dataDict.items():
             for tier, size in tierDict.items():
-                copiesByDelta = diskCopies[tier]
+                diskCopiesByDelta = diskCopies[tier]
                 tapeCopiesByDelta = tapeCopies[tier]
                 if int(producedYear) <= int(year):  # Can't save data for future years
-                    if year - producedYear >= len(copiesByDelta):
-                        diskSize = size * copiesByDelta[-1]  # Use the data for the last year
+                    if year - producedYear >= len(diskCopiesByDelta):
+                        diskSize = size * diskCopiesByDelta[-1]  # Use the data for the last year
                         tapeSize = size * tapeCopiesByDelta[-1]  # Use the data for the last year
                     else:
-                        diskSize = size * copiesByDelta[year - producedYear]
+                        diskSize = size * diskCopiesByDelta[year - producedYear]
                         tapeSize = size * tapeCopiesByDelta[year - producedYear]
                     if diskSize:
                         dataOnDisk[year][dataType][tier] += diskSize
