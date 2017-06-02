@@ -7,13 +7,13 @@ from collections import defaultdict
 
 import pandas as pd
 
-from configure import configure
+from configure import configure, in_shutdown
 
 PETA = 1e15
 
 model = configure('RealisticModel.json')
 YEARS = list(range(model['start_year'], model['end_year'] + 1))
-TIERS = list(model['tier_size'])
+TIERS = list(model['tier_size'].keys())
 
 # Disk space used
 dataProduced = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))  # dataProduced[year][type][tier]
@@ -58,6 +58,10 @@ for year in YEARS:
                     if year - producedYear >= len(diskCopiesByDelta):
                         revOnDisk = diskCopiesByDelta[-1]  # Revisions = versions * copies
                         revOnTape = tapeCopiesByDelta[-1]  # Assume what we have for the last year is good for out years
+                    elif in_shutdown(model, year):
+                        inShutdown, lastRunningYear = in_shutdown(model, year)
+                        revOnDisk = diskCopiesByDelta[lastRunningYear - producedYear]
+                        revOnTape = tapeCopiesByDelta[lastRunningYear - producedYear]
                     else:
                         revOnDisk = diskCopiesByDelta[year - producedYear]
                         revOnTape = tapeCopiesByDelta[year - producedYear]

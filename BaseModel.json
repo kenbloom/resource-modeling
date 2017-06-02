@@ -1,5 +1,6 @@
 {
  "end_year": 2027, 
  "hl_start_year": 2026, 
- "start_year": 2017
+ "start_year": 2017,
+ "shutdown_years": [2019, 2020, 2024, 2025]
 }
