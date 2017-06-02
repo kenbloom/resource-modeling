@@ -1,0 +1,55 @@
+{
+ "storage_model": {
+  "disk_replicas": {
+   "AOD": [
+    0.2, 
+    0, 
+    0
+   ], 
+   "MICROAOD": [
+    5, 
+    3, 
+    1
+   ], 
+   "MINIAOD": [
+    3, 
+    2, 
+    1
+   ]
+  }, 
+  "tape_replicas": {
+   "AOD": [
+    1, 
+    1, 
+    1
+   ], 
+   "MICROAOD": [
+    1, 
+    1, 
+    1
+   ], 
+   "MINIAOD": [
+    1, 
+    1, 
+    1
+   ]
+  }, 
+  "versions": {
+   "AOD": [
+    1, 
+    1, 
+    0
+   ], 
+   "MICROAOD": [
+    10, 
+    5, 
+    5
+   ], 
+   "MINIAOD": [
+    2, 
+    1, 
+    1
+   ]
+  }
+ }
+}
