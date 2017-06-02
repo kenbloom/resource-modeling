@@ -3,6 +3,7 @@
 from __future__ import division, print_function
 
 import json
+import sys
 from collections import defaultdict
 
 import pandas as pd
@@ -11,7 +12,11 @@ from configure import configure
 
 PETA = 1e15
 
-model = configure('RealisticModel.json')
+modelName = None
+if len(sys.argv) > 1:
+    modelName = sys.argv[1]
+
+model = configure(modelName)
 YEARS = list(range(model['start_year'], model['end_year'] + 1))
 TIERS = list(model['tier_size'])
 

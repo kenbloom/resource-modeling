@@ -14,15 +14,17 @@ Load the model parameters from two JSON files
 
 
 def configure(modelName):
-    # Load base parameters
-    with open('BaseModel.json', 'r') as baseFile:
-        model = json.load(baseFile)
 
-    # Load and apply model parameters
-    with open(modelName) as modelFile:
-        modelChanges = json.load(modelFile)
+    modelNames = ['BaseModel.json', 'RealisticModel.json']
 
-    model.update(modelChanges)
+    if modelName:
+        modelNames.append(modelName)
+
+    model = {}
+    for modelName in modelNames:
+        with open(modelName, 'r') as modelFile:
+            modelChanges = json.load(modelFile)
+            model.update(modelChanges)
 
     try:
         with open('EventCounts.json', 'r') as eventFile:
