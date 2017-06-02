@@ -31,3 +31,17 @@ def configure(modelName):
         model['eventCounts'] = {}
 
     return model
+
+def in_shutdown(model, year):
+    """
+    :param model: The configuration dictionary
+    :param year: check if this year is in a shutdown period
+    :return: boolean for in shutdown, integer for last year not in shutdown
+    """
+
+    inShutdown = year in model['shutdown_years']
+
+    while year in model['shutdown_years']:
+        year -= 1
+
+    return inShutdown, year
