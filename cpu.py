@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 from configure import configure
+from utils import performance_by_year
 
 # Basic parameters
 kilo = 1000
@@ -22,8 +23,8 @@ running_time = 7.8E06
 model = configure('RealisticModel.json')
 
 mc_factor = model['mc_event_factor']
-software_improvement_factor = float(sys.argv[1])
-cpu_improvement_factor = float(sys.argv[2])
+software_improvement_factor = model['improvement_factors']['software']
+cpu_improvement_factor = model['improvement_factors']['hardware']
 retirement_rate = 0.05
 
 # The very important list of years
@@ -32,34 +33,11 @@ years = list(range(model['start_year'], model['end_year']+1))
 plotyears = [x-0.5 for x in years]
 plotyears.append(model['end_year'] + 0.5)
 
-software_improvement = {i : software_improvement_factor ** (i + 1 - model['start_year'])
-                            for i in years}
-
-# LHC processing times as of 2017; these need verification
-data_reco_time_lhc = 250 #this is per HS
-mc_gensim_time_lhc = 500 #this is per HS
-mc_digi_time_lhc = 100 #this is per HS
-mc_reco_time_lhc = data_reco_time_lhc
-
-# HL-LHC processing times as of 2017
-data_reco_time_hllhc = 4.00 * kilo #this is per HS
-mc_gensim_time_hllhc = 1.50 * kilo #this is per HS
-mc_digi_time_hllhc = 2.27 * kilo #this is per HS
-mc_reco_time_hllhc = data_reco_time_hllhc
-
-# Calculate the times by year assuming the software improvement factor...
-# for simplicity we fill the arrays with the standard LHC values...
-reco_time = {i : data_reco_time_lhc/software_improvement[i] for i in years}
-sim_time = {i : (mc_gensim_time_lhc + mc_digi_time_lhc + mc_reco_time_lhc)
-                /software_improvement[i] for i in years}
-
-# ...but for 2026 and 2027, override this with the HL-LHC numbers!
-# (sorry about the kludge)
-
-for year in range(model['hl_start_year'], model['end_year']+1):
-    reco_time[year] = data_reco_time_hllhc/software_improvement[year]
-    sim_time[year] = (mc_gensim_time_hllhc + mc_digi_time_hllhc +
-                      mc_reco_time_hllhc)/software_improvement[year]
+# Get the performance year by year which includes the software improvement factor
+reco_time = {year: performance_by_year(model, year, 'RECO', data_type='data')[0] for year in years}
+sim_time = {year: performance_by_year(model, year, 'GENSIM', data_type='mc')[0] +
+                  performance_by_year(model, year, 'DIGI',data_type='mc')[0] +
+                  performance_by_year(model, year, 'RECO', data_type='mc')[0] for year in years}
 
 # Running time: assume that running years (full years)
 # are all the same number of seconds, shutdown years are zero
@@ -146,13 +124,11 @@ for i in years:
 
 # Try to plot this
 
-plt.hist(years, plotyears, weights=[v/mega for v in cpu_capacity.values()],
-             rwidth=0.8)
-plt.plot(years, [v/mega for v in total_cpu_required.values()])
+plt.hist(years, plotyears, weights=[v / mega for v in cpu_capacity.values()],
+         rwidth=0.8)
+plt.plot(years, [v / mega for v in total_cpu_required.values()])
 plt.ylabel('MHS06')
 plt.xlabel('Year')
-plt.title('CPU improvement ' + sys.argv[1] +
-              ' Software improvement = ' + sys.argv[2])
+plt.title('CPU improvement %s Software improvement = %s' % (cpu_improvement_factor, software_improvement_factor))
 
-    
 plt.show()
