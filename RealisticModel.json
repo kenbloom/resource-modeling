@@ -1,11 +1,29 @@
 {
  "cpu_time": {
-  "data": {}, 
-  "mc": {}
+  "data": {
+   "RECO": {
+    "2017": 250, 
+    "2026": 4000.0
+   }
+  }, 
+  "mc": {
+   "DIGI": {
+    "2017": 100, 
+    "2026": 2270.0
+   }, 
+   "GENSIM": {
+    "2017": 500, 
+    "2026": 1500.0
+   }, 
+   "RECO": {
+    "2017": 250, 
+    "2026": 4000.0
+   }
+  }
  }, 
  "improvement_factors": {
-  "hardware": 0.1, 
-  "software": 0.1
+  "hardware": 1.1, 
+  "software": 1.1
  }, 
  "mc_event_factor": 2.0, 
  "storage_model": {
