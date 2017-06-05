@@ -9,6 +9,7 @@ from collections import defaultdict
 import pandas as pd
 
 from configure import configure, in_shutdown
+from utils import performance_by_year
 
 PETA = 1e15
 
@@ -18,7 +19,7 @@ if len(sys.argv) > 1:
 
 model = configure(modelName)
 YEARS = list(range(model['start_year'], model['end_year'] + 1))
-TIERS = list(model['tier_size'].keys())
+TIERS = list(model['tier_sizes'].keys())
 
 # Disk space used
 dataProduced = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))  # dataProduced[year][type][tier]
@@ -37,7 +38,8 @@ for tier in TIERS:
 
 # Loop over years to determine how much is produced without versions or replicas
 for year in YEARS:
-    for tier, tierSize in model['tier_size'].items():
+    for tier in TIERS:
+        dummyCPU, tierSize = performance_by_year(model, year, tier)
         dataProduced[year]['data'][tier] += tierSize * model['eventCounts']['data'][str(year)]
         dataProduced[year]['mc'][tier] += tierSize * model['eventCounts']['mc'][str(year)]
 
