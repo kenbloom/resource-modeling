@@ -40,8 +40,10 @@ for tier in TIERS:
 for year in YEARS:
     for tier in TIERS:
         dummyCPU, tierSize = performance_by_year(model, year, tier)
-        dataProduced[year]['data'][tier] += tierSize * model['eventCounts']['data'][str(year)]
-        dataProduced[year]['mc'][tier] += tierSize * model['eventCounts']['mc'][str(year)]
+        if tier not in model['mc_only_tiers']:
+            dataProduced[year]['data'][tier] += tierSize * model['eventCounts']['data'][str(year)]
+        if tier not in model['data_only_tiers']:
+            dataProduced[year]['mc'][tier] += tierSize * model['eventCounts']['mc'][str(year)]
 
 print("Data Produced by year and tier")
 for year, dataDict in dataProduced.items():
