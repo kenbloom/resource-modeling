@@ -30,11 +30,6 @@ retirement_rate = 0.05
 
 # The very important list of years
 years = list(range(model['start_year'], model['end_year']+1))
-# List of "data" types, for the histogram later
-types = list(model['cpu_time'].keys())
-# Annyoing kludge for later plotting
-plotyears = [x-0.5 for x in years]
-plotyears.append(model['end_year'] + 0.5)
 
 # Get the performance year by year which includes the software improvement factor
 reco_time = {year: performance_by_year(model, year, 'RECO', data_type='data')[0] for year in years}
@@ -127,33 +122,32 @@ for i in years:
 
 # Try to plot this
 
-# Initialize a matrix with types and years
-cpuByType = [[0 for _i in range(len(types))] for _j in years]
+# Squirt the dictionary entries into lists:
 
-# Sorry for this really kludgey thing of data = 0 and mc = 1.
-# Needs more thought on how to treat these two uniformly when they aren't
-# uniform!
-for i in years:
-    cpuByType[years.index(i)][0] = data_cpu_required[i] / mega
-    cpuByType[years.index(i)][1] = mc_cpu_required[i] / mega
-    
-cpuFrame = pd.DataFrame(cpuByType, columns=types, index=years)
-ax = cpuFrame.plot(kind='bar', stacked=True)
+cpuDataList = []
+for year, item in sorted(data_cpu_required.items()):
+    cpuDataList.append(item/mega)
+cpuMCList = []
+for year, item in sorted(mc_cpu_required.items()):
+    cpuMCList.append(item/mega)
+cpuCapacityList = []
+for year, item in sorted(cpu_capacity.items()):
+    cpuCapacityList.append(item/mega)
+
+# Build a data frame from lists:
+
+cpuFrame = pd.DataFrame({'Year': [str(year) for year in years],
+                             'Data' : cpuDataList,
+                             'MC' : cpuMCList,
+                             'Capacity' : cpuCapacityList})
+
+
+ax = cpuFrame[['Year','Capacity']].plot(x='Year',linestyle='-',marker='o', color='Red')
+cpuFrame[['Year', 'Data', 'MC']].plot(x='Year',kind='bar',stacked=True,ax=ax)
 ax.set(ylabel='MHS06')
-ax.set(xlabel='Year')
-ax.set(title='CPU improvement %s Software improvement = %s' % (cpu_improvement_factor, software_improvement_factor))
-
+ax.set(title='CPU improvement %s Software improvement = %s' %
+           (cpu_improvement_factor, software_improvement_factor))
 
 fig = ax.get_figure()
 fig.savefig('CPU by Type.png')
-    
-#plt.hist(years, plotyears, weights=[v/mega for v in cpu_capacity.values()],
-#             rwidth=0.8)
-#plt.plot(years, [v/mega for v in total_cpu_required.values()])
-#plt.ylabel('MHS06')
-#plt.xlabel('Year')
-#plt.title('CPU improvement ' + sys.argv[1] +
-#              ' Software improvement = ' + sys.argv[2])
 
-    
-#plt.show()
