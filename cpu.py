@@ -142,7 +142,7 @@ cpuFrame = pd.DataFrame({'Year': [str(year) for year in years],
                              'Capacity' : cpuCapacityList})
 
 
-ax = cpuFrame[['Year','Capacity']].plot(x='Year',linestyle='-',marker='o')
+ax = cpuFrame[['Year','Capacity']].plot(x='Year',linestyle='-',marker='o', color='Red')
 cpuFrame[['Year', 'Data', 'MC']].plot(x='Year',kind='bar',stacked=True,ax=ax)
 ax.set(ylabel='MHS06')
 ax.set(title='CPU improvement %s Software improvement = %s' %
