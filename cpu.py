@@ -30,7 +30,6 @@ retirement_rate = 0.05
 
 # The very important list of years
 years = list(range(model['start_year'], model['end_year']+1))
-plotyears
 
 # Get the performance year by year which includes the software improvement factor
 reco_time = {year: performance_by_year(model, year, 'RECO', data_type='data')[0] for year in years}
@@ -137,7 +136,7 @@ for year, item in sorted(cpu_capacity.items()):
 
 # Build a data frame from lists:
 
-cpuFrame = pd.DataFrame({'Year': years,
+cpuFrame = pd.DataFrame({'Year': [str(year) for year in years],
                              'Data' : cpuDataList,
                              'MC' : cpuMCList,
                              'Capacity' : cpuCapacityList})
@@ -151,4 +150,4 @@ ax.set(title='CPU improvement %s Software improvement = %s' %
 
 fig = ax.get_figure()
 fig.savefig('CPU by Type.png')
-    
+
