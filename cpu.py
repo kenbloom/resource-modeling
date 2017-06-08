@@ -19,6 +19,7 @@ giga = 1000 * mega
 tera = 1000 * giga
 peta = 1000 * tera
 seconds_per_year = 86400 * 365
+seconds_per_month = 86400 * 30
 running_time = 7.8E06
 
 model = configure('RealisticModel.json')
@@ -62,12 +63,25 @@ mc_events = {i : data_events[i] * mc_factor for i in years}
 data_cpu_time = {i : data_events[i] * reco_time[i] for i in years}
 mc_cpu_time = {i : mc_events[i] * sim_time[i] for i in years}
 
-# The data need to be reconstructed about as quickly as we record them.
+# The data need to be reconstructed about as quickly as we record them.  In
+# addition, we need to factor in express, repacking, AlCa, CAF
+# functionality and skimming.  Presumably these all scale like the data.
+# Per the latest CRSG document, these total to 123 kHS06 compared to 240
+# kHS016 for the prompt reconstruction, which we can round to 50%, so
+# multiply by 50%.  (Ignoring the 10 kHS06 needed for VO boxes, which
+# won't scale up and is also pretty small.)  In-year reprocessing model:
+# assume we will re-reco 10% of the data each year, but we want to
+# complete it in one month.
+
+
+data_cpu_required = {i : (1.5 * data_cpu_time[i] / running_time
+                              + 0.1 * data_cpu_time[i] / seconds_per_month)
+                         for i in years}
+
 # The corresponding MC, on the other hand, can be reconstructed over an
 # entire year.  We can use this to calculate the HS06 needed to do those
 # tasks.
 
-data_cpu_required = {i : data_cpu_time[i] / running_time for i in years}
 mc_cpu_required = {i : mc_cpu_time[i] / seconds_per_year for i in years}
 
 
@@ -109,9 +123,6 @@ del cpu_capacity[2016]
 
 #cpu_capacity[2026] *= 2
 #cpu_capacity[2027] *= 2
-
-#for i in years: print i, '{:04.3f}'.format((data_cpu_required[i] +
-#    mc_cpu_required[i]) / mega), '{:04.3f}'.format(cpu_capacity[i] / mega), 'MHS06', '{:04.3f}'.format((data_cpu_required[i] + mc_cpu_required[i])/(cpu_capacity[i]))
 
 for i in years:
     print(i, '{:04.3f}'.format(data_cpu_required[i] / mega),
