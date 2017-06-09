@@ -45,12 +45,11 @@ for year in YEARS:
         if tier not in model['data_only_tiers']:
             dataProduced[year]['mc'][tier] += tierSize * model['eventCounts']['mc'][str(year)]
 
-print("Data Produced by year and tier")
+producedByTier = [[0 for _i in range(len(TIERS))] for _j in YEARS]
 for year, dataDict in dataProduced.items():
-    print(" %s" % year)
     for dataType, tierDict in dataDict.items():
         for tier, size in tierDict.items():
-            print("  %10s (%4s): %10.3f PB" % (tier, dataType, size / PETA))
+            producedByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
 
 # Initialize a matrix with years and years
 diskByYear = [[0 for _i in YEARS] for _j in YEARS]
@@ -97,30 +96,50 @@ for year, dataDict in dataOnTape.items():
         for tier, size in tierDict.items():
             tapeByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
 
+# Make the plot of produced data per year (input to other plots)
+producedFrame = pd.DataFrame(producedByTier, columns=TIERS, index=YEARS)
+ax = producedFrame.plot(kind='bar', stacked=True)
+ax.set(ylabel='PB', title='Data produced by tier')
+for tick in ax.get_xticklabels():
+    tick.set_rotation(45)
+fig = ax.get_figure()
+fig.savefig('Produced by Tier.png')
+
+# Make the plots of disk and tape data broken up into tiers
 diskFrame = pd.DataFrame(diskByTier, columns=TIERS, index=YEARS)
 ax = diskFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB on disk')
+ax.set(ylabel='PB', title='Data on disk by tier')
+for tick in ax.get_xticklabels():
+    tick.set_rotation(45)
 fig = ax.get_figure()
 fig.savefig('Disk by Tier.png')
 
 tapeFrame = pd.DataFrame(tapeByTier, columns=TIERS, index=YEARS)
 ax = tapeFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB on tape')
+ax.set(ylabel='PB', title='Data on tape by tier')
+for tick in ax.get_xticklabels():
+    tick.set_rotation(45)
 fig = ax.get_figure()
 fig.savefig('Tape by Tier.png')
 
+# Make the plots of disk and tape data broken up into production year
 diskByYearFrame = pd.DataFrame(diskByYear, columns=YEARS, index=YEARS)
 ax = diskByYearFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB on disk')
+ax.set(ylabel='PB', title='Data on disk by year produced')
+for tick in ax.get_xticklabels():
+    tick.set_rotation(45)
 fig = ax.get_figure()
 fig.savefig('Disk by Year.png')
 
 tapeByYearFrame = pd.DataFrame(tapeByYear, columns=YEARS, index=YEARS)
 ax = tapeByYearFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB on tape')
+ax.set(ylabel='PB', title='Data on tape by year produced')
+for tick in ax.get_xticklabels():
+    tick.set_rotation(45)
 fig = ax.get_figure()
 fig.savefig('Tape by Year.png')
 
+# Dump out tuples of all the data on tape and disk in a given year
 with open('disk_samples.json', 'w') as diskUsage, open('tape_samples.json', 'w') as tapeUsage:
     json.dump(diskSamples, diskUsage, sort_keys=True, indent=1)
     json.dump(tapeSamples, tapeUsage, sort_keys=True, indent=1)
