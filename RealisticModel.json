@@ -46,7 +46,6 @@
   "hardware": 1.1, 
   "software": 1.1, 
   "tape": 1.3,
-  "cpu": 1.1   
  }, 
  "mc_event_factor": 2.0, 
  "storage_model": {
