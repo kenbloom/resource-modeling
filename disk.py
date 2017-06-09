@@ -6,9 +6,8 @@ import json
 import sys
 from collections import defaultdict
 
-import pandas as pd
-
 from configure import configure, in_shutdown
+from plotting import plotStorage, plotStorageWithCapacity
 from utils import performance_by_year
 
 PETA = 1e15
@@ -20,6 +19,51 @@ if len(sys.argv) > 1:
 model = configure(modelName)
 YEARS = list(range(model['start_year'], model['end_year'] + 1))
 TIERS = list(model['tier_sizes'].keys())
+
+# Build the capacity model
+
+# Set the initial points
+diskCapacity = {str(model['capacity_model']['disk_year']): model['capacity_model']['disk_start']}
+tapeCapacity = {str(model['capacity_model']['tape_year']): model['capacity_model']['tape_start']}
+
+# A bit of a kludge. Assume what we have now was bought and will be retired in equal chunks over its lifetime
+diskAdded = {}
+tapeAdded = {}
+for year in range(model['capacity_model']['disk_year'] - model['capacity_model']['disk_lifetime'] + 1,
+                  model['capacity_model']['disk_year'] + 1):
+    retired = model['capacity_model']['disk_start'] / model['capacity_model']['disk_lifetime']
+    diskAdded[str(year)] = retired
+for year in range(model['capacity_model']['tape_year'] - model['capacity_model']['tape_lifetime'] + 1,
+                  model['capacity_model']['tape_year'] + 1):
+    retired = model['capacity_model']['tape_start'] / model['capacity_model']['tape_lifetime']
+    tapeAdded[str(year)] = retired
+
+diskFactor = model['improvement_factors']['disk']
+tapeFactor = model['improvement_factors']['tape']
+
+for year in YEARS:
+    if str(year) not in diskCapacity:
+        diskDelta = 0  # Find the delta which can be time dependant
+        tapeDelta = 0  # Find the delta which can be time dependant
+        diskDeltas = model['capacity_model']['disk_delta']
+        tapeDeltas = model['capacity_model']['tape_delta']
+        for deltaYear in sorted(diskDeltas.keys()):
+            if int(year) >= int(deltaYear):
+                lastDiskYear = int(deltaYear)
+                diskDelta = model['capacity_model']['disk_delta'][deltaYear]
+        for deltaYear in sorted(tapeDeltas.keys()):
+            if int(year) >= int(deltaYear):
+                lastTapeYear = int(deltaYear)
+                tapeDelta = model['capacity_model']['tape_delta'][deltaYear]
+
+        diskAdded[str(year)] = diskDelta * diskFactor ** (int(year) - int(lastDiskYear))
+        tapeAdded[str(year)] = tapeDelta * tapeFactor ** (int(year) - int(lastTapeYear))
+        # Retire disk/tape added N years ago or retire 0
+
+        diskRetired = diskAdded.get(str(int(year) - model['capacity_model']['disk_lifetime']), 0)
+        tapeRetired = tapeAdded.get(str(int(year) - model['capacity_model']['tape_lifetime']), 0)
+        diskCapacity[str(year)] = diskCapacity[str(int(year) - 1)] + diskAdded[str(year)] - diskRetired
+        tapeCapacity[str(year)] = tapeCapacity[str(int(year) - 1)] + tapeAdded[str(year)] - tapeRetired
 
 # Disk space used
 dataProduced = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))  # dataProduced[year][type][tier]
@@ -51,9 +95,12 @@ for year, dataDict in dataProduced.items():
         for tier, size in tierDict.items():
             producedByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
 
+# Initialize a matrix with tiers and years
+YearColumns = YEARS + ['Capacity', 'Year']  # Add capacity as last column
+
 # Initialize a matrix with years and years
-diskByYear = [[0 for _i in YEARS] for _j in YEARS]
-tapeByYear = [[0 for _i in YEARS] for _j in YEARS]
+diskByYear = [[0 for _i in YearColumns] for _j in YEARS]
+tapeByYear = [[0 for _i in YearColumns] for _j in YEARS]
 
 # Loop over years to determine how much is saved
 for year in YEARS:
@@ -76,68 +123,44 @@ for year in YEARS:
                     if size and revOnDisk:
                         dataOnDisk[year][dataType][tier] += size * revOnDisk
                         diskSamples[year].append([producedYear, dataType, tier, size * revOnDisk, revOnDisk])
-                        diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size  * revOnDisk/ PETA
+                        diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnDisk / PETA
                     if size and revOnTape:
                         dataOnTape[year][dataType][tier] += size * revOnTape
                         tapeSamples[year].append([producedYear, dataType, tier, size * revOnTape, revOnTape])
-                        tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape/ PETA
+                        tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape / PETA
+    diskByYear[YEARS.index(year)][YearColumns.index('Capacity')] = diskCapacity[str(year)] / PETA
+    diskByYear[YEARS.index(year)][YearColumns.index('Year')] = str(year)
+    tapeByYear[YEARS.index(year)][YearColumns.index('Capacity')] = tapeCapacity[str(year)] / PETA
+    tapeByYear[YEARS.index(year)][YearColumns.index('Year')] = str(year)
 
 # Initialize a matrix with tiers and years
-diskByTier = [[0 for _i in range(len(TIERS))] for _j in YEARS]
-tapeByTier = [[0 for _i in range(len(TIERS))] for _j in YEARS]
+TierColumns = TIERS + ['Capacity', 'Year']  # Add capacity as last column
 
+diskByTier = [[0 for _i in range(len(TierColumns))] for _j in YEARS]
+tapeByTier = [[0 for _i in range(len(TierColumns))] for _j in YEARS]
 for year, dataDict in dataOnDisk.items():
     for dataType, tierDict in dataDict.items():
         for tier, size in tierDict.items():
-            diskByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
-
+            diskByTier[YEARS.index(year)][TierColumns.index(tier)] += size / PETA
+    diskByTier[YEARS.index(year)][TierColumns.index('Capacity')] = diskCapacity[str(year)] / PETA
+    diskByTier[YEARS.index(year)][TierColumns.index('Year')] = str(year)
 for year, dataDict in dataOnTape.items():
     for dataType, tierDict in dataDict.items():
         for tier, size in tierDict.items():
-            tapeByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
+            tapeByTier[YEARS.index(year)][TierColumns.index(tier)] += size / PETA
+    tapeByTier[YEARS.index(year)][TierColumns.index('Capacity')] = tapeCapacity[str(year)] / PETA
+    tapeByTier[YEARS.index(year)][TierColumns.index('Year')] = str(year)
 
-# Make the plot of produced data per year (input to other plots)
-producedFrame = pd.DataFrame(producedByTier, columns=TIERS, index=YEARS)
-ax = producedFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB', title='Data produced by tier')
-for tick in ax.get_xticklabels():
-    tick.set_rotation(45)
-fig = ax.get_figure()
-fig.savefig('Produced by Tier.png')
+plotStorage(producedByTier, name='Produced by Tier.png', title='Data produced by tier', columns=TIERS, index=YEARS)
 
-# Make the plots of disk and tape data broken up into tiers
-diskFrame = pd.DataFrame(diskByTier, columns=TIERS, index=YEARS)
-ax = diskFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB', title='Data on disk by tier')
-for tick in ax.get_xticklabels():
-    tick.set_rotation(45)
-fig = ax.get_figure()
-fig.savefig('Disk by Tier.png')
-
-tapeFrame = pd.DataFrame(tapeByTier, columns=TIERS, index=YEARS)
-ax = tapeFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB', title='Data on tape by tier')
-for tick in ax.get_xticklabels():
-    tick.set_rotation(45)
-fig = ax.get_figure()
-fig.savefig('Tape by Tier.png')
-
-# Make the plots of disk and tape data broken up into production year
-diskByYearFrame = pd.DataFrame(diskByYear, columns=YEARS, index=YEARS)
-ax = diskByYearFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB', title='Data on disk by year produced')
-for tick in ax.get_xticklabels():
-    tick.set_rotation(45)
-fig = ax.get_figure()
-fig.savefig('Disk by Year.png')
-
-tapeByYearFrame = pd.DataFrame(tapeByYear, columns=YEARS, index=YEARS)
-ax = tapeByYearFrame.plot(kind='bar', stacked=True)
-ax.set(ylabel='PB', title='Data on tape by year produced')
-for tick in ax.get_xticklabels():
-    tick.set_rotation(45)
-fig = ax.get_figure()
-fig.savefig('Tape by Year.png')
+plotStorageWithCapacity(tapeByTier, name='Tape by Tier.png', title='Data on tape by tier', columns=TierColumns,
+                        bars=TIERS)
+plotStorageWithCapacity(diskByTier, name='Disk by Tier.png', title='Data on disk by tier', columns=TierColumns,
+                        bars=TIERS)
+plotStorageWithCapacity(tapeByYear, name='Tape by Year.png', title='Data on tape by year produced', columns=YearColumns,
+                        bars=YEARS)
+plotStorageWithCapacity(diskByYear, name='Disk by Year.png', title='Data on disk by year produced', columns=YearColumns,
+                        bars=YEARS)
 
 # Dump out tuples of all the data on tape and disk in a given year
 with open('disk_samples.json', 'w') as diskUsage, open('tape_samples.json', 'w') as tapeUsage:
