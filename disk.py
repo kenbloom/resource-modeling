@@ -6,7 +6,7 @@ import json
 import sys
 from collections import defaultdict
 
-from configure import configure, in_shutdown
+from configure import configure, in_shutdown, run_model
 from plotting import plotStorage, plotStorageWithCapacity
 from utils import performance_by_year
 
@@ -85,9 +85,9 @@ for year in YEARS:
     for tier in TIERS:
         dummyCPU, tierSize = performance_by_year(model, year, tier)
         if tier not in model['mc_only_tiers']:
-            dataProduced[year]['data'][tier] += tierSize * model['eventCounts']['data'][str(year)]
+            dataProduced[year]['data'][tier] += tierSize * run_model(model, year, data_type='data').events
         if tier not in model['data_only_tiers']:
-            dataProduced[year]['mc'][tier] += tierSize * model['eventCounts']['mc'][str(year)]
+            dataProduced[year]['mc'][tier] += tierSize * run_model(model, year, data_type='mc').events
 
 producedByTier = [[0 for _i in range(len(TIERS))] for _j in YEARS]
 for year, dataDict in dataProduced.items():
