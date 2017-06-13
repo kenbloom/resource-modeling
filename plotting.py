@@ -12,8 +12,8 @@ import pandas as pd
 
 def plotStorageWithCapacity(data, name, title='', columns=None, bars=None):
     frame = pd.DataFrame(data, columns=columns)
-    ax = frame[bars + ['Year']].plot(x='Year', kind='bar', stacked=True)
-    frame[['Capacity', 'Year']].plot(x='Year', linestyle='-', marker='o', color='Black', ax=ax)
+    ax = frame[['Capacity', 'Year']].plot(x='Year', linestyle='-', marker='o', color='Black')
+    frame[bars + ['Year']].plot(x='Year', kind='bar', stacked=True, ax=ax)
     ax.set(ylabel='PB', title=title)
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
