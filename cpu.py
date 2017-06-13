@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import json
-from configure import configure
+from configure import configure, run_model
 from utils import performance_by_year
 
 # Basic parameters
@@ -38,27 +38,11 @@ sim_time = {year: performance_by_year(model, year, 'GENSIM', data_type='mc')[0] 
                   performance_by_year(model, year, 'DIGI',data_type='mc')[0] +
                   performance_by_year(model, year, 'RECO', data_type='mc')[0] for year in YEARS}
 
-# Running time: assume that running years (full years)
-# are all the same number of seconds, shutdown years are zero
-# 2026 is a little kludgy, it's a half year?
-
-data_seconds = {i : running_time for i in YEARS}
-data_seconds[2019] = 0
-data_seconds[2020] = 0
-data_seconds[2024] = 0
-data_seconds[2025] = 0
-
-# For completeness, an array of trigger rates, which we assume to be 1 kHz
-# until the HL-LHC starts in 2026.
-
-trigger_rate = {i : 1.0 * kilo for i in YEARS}
-trigger_rate[2026] = 10.0 * kilo
-trigger_rate[2027] = 10.0 * kilo
-
 # CPU time requirement calculations, in HS06 * s
+# Take the running time and event rate from the model
 
-data_events = {i : data_seconds[i] * trigger_rate[i] for i in YEARS}
-mc_events = {i : data_events[i] * mc_factor for i in YEARS}
+data_events = {i: run_model(model, i, data_type='data').events for i in YEARS}
+mc_events = {i: run_model(model, i, data_type='mc').events for i in YEARS}
 
 data_cpu_time = {i : data_events[i] * reco_time[i] for i in YEARS}
 mc_cpu_time = {i : mc_events[i] * sim_time[i] for i in YEARS}
@@ -88,13 +72,6 @@ mc_cpu_required = {i : mc_cpu_time[i] / seconds_per_year for i in YEARS}
 total_cpu_required = {i : data_cpu_required[i] + mc_cpu_required[i] for i in YEARS}
 
 
-
-# Write out the number of events per year for use in other models
-eventCounts = {}
-with open('EventCounts.json', 'w') as eventFile:
-    eventCounts['data'] = data_events
-    eventCounts['mc'] = mc_events
-    json.dump(eventCounts, eventFile, indent=1, sort_keys=True)
 
 # Then, CPU availability calculations.  This follows the "Available CPU
 # power" spreadsheet.  Take a baseline value of 1.4 MHS06 in 2016, in
