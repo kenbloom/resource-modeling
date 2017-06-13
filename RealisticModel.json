@@ -1,5 +1,12 @@
 {
  "capacity_model": {
+  "cpu_delta": {
+   "2017": 300000.0, 
+   "2020": 800000.0
+  }, 
+  "cpu_lifetime": 5, 
+  "cpu_start": 1630000.0, 
+  "cpu_year": 2017, 
   "disk_delta": {
    "2017": 2.7e+16
   }, 
