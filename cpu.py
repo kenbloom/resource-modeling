@@ -1,5 +1,12 @@
 #! /usr/bin/env python
 
+"""
+Usage: ./cpu.py config1.json,config2.json,...,configN.json
+
+Determine the CPU model by running under various configuration changes. BaseModel.json and RealisticModel.json
+provide defaults and configN.json overrides values in those configs or earlier ones in the list
+"""
+
 from __future__ import division
 from __future__ import print_function
 
@@ -22,7 +29,10 @@ seconds_per_year = 86400 * 365
 seconds_per_month = 86400 * 30
 running_time = 7.8E06
 
-model = configure('RealisticModel.json')
+modelNames = None
+if len(sys.argv) > 1:
+    modelNames = sys.argv[1].split(',')
+model = configure(modelNames)
 
 mc_factor = model['mc_event_factor']
 software_improvement_factor = model['improvement_factors']['software']
