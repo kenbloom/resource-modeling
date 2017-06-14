@@ -20,8 +20,10 @@ SECONDS_PER_YEAR = 365.25 * 24 * 3600
 def configure(modelName):
     modelNames = ['BaseModel.json', 'RealisticModel.json']
 
-    if modelName:
+    if isinstance(modelName, basestring):
         modelNames.append(modelName)
+    elif isinstance(modelName, list):
+        modelNames.extend(modelName)
 
     model = {}
     for modelName in modelNames:

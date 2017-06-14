@@ -1,5 +1,12 @@
 #! /usr/bin/env python
 
+"""
+Usage: ./cpu.py config1.json,config2.json,...,configN.json
+
+Determine the disk and tape models by running under various configuration changes. BaseModel.json and RealisticModel.json
+provide defaults and configN.json overrides values in those configs or earlier ones in the list
+"""
+
 from __future__ import division, print_function
 
 import json
@@ -12,11 +19,11 @@ from utils import performance_by_year, time_dependent_value
 
 PETA = 1e15
 
-modelName = None
+modelNames = None
 if len(sys.argv) > 1:
-    modelName = sys.argv[1]
+    modelNames = sys.argv[1].split(',')
+model = configure(modelNames)
 
-model = configure(modelName)
 YEARS = list(range(model['start_year'], model['end_year'] + 1))
 TIERS = list(model['tier_sizes'].keys())
 STATIC_TIERS = list(sorted(set(model['static_disk'].keys() + model['static_tape'].keys())))
