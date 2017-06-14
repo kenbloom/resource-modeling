@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from configure import configure, in_shutdown, run_model
 from plotting import plotStorage, plotStorageWithCapacity
-from utils import performance_by_year
+from utils import performance_by_year, time_dependent_value
 
 PETA = 1e15
 
@@ -19,6 +19,7 @@ if len(sys.argv) > 1:
 model = configure(modelName)
 YEARS = list(range(model['start_year'], model['end_year'] + 1))
 TIERS = list(model['tier_sizes'].keys())
+STATIC_TIERS = list(sorted(set(model['static_disk'].keys() + model['static_tape'].keys())))
 
 # Build the capacity model
 
@@ -56,8 +57,8 @@ for year in YEARS:
                 lastTapeYear = int(deltaYear)
                 tapeDelta = model['capacity_model']['tape_delta'][deltaYear]
 
-        diskAdded[str(year)] = diskDelta * diskFactor ** (int(year) - int(lastDiskYear))
-        tapeAdded[str(year)] = tapeDelta * tapeFactor ** (int(year) - int(lastTapeYear))
+        diskAdded[str(year)] = diskDelta * diskFactor**(int(year) - int(lastDiskYear))
+        tapeAdded[str(year)] = tapeDelta * tapeFactor**(int(year) - int(lastTapeYear))
         # Retire disk/tape added N years ago or retire 0
 
         diskRetired = diskAdded.get(str(int(year) - model['capacity_model']['disk_lifetime']), 0)
@@ -96,7 +97,7 @@ for year, dataDict in dataProduced.items():
             producedByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
 
 # Initialize a matrix with tiers and years
-YearColumns = YEARS + ['Capacity', 'Year']  # Add capacity as last column
+YearColumns = YEARS + ['Capacity', 'Year']  # Add capacity, years as columns for data frame
 
 # Initialize a matrix with years and years
 diskByYear = [[0 for _i in YearColumns] for _j in YEARS]
@@ -104,6 +105,19 @@ tapeByYear = [[0 for _i in YearColumns] for _j in YEARS]
 
 # Loop over years to determine how much is saved
 for year in YEARS:
+    # Add static (or nearly) data
+    for tier, spaces in model['static_disk'].items():
+        size, producedYear = time_dependent_value(year=year, values=spaces)
+        dataOnDisk[year]['Other'][tier] += size
+        diskSamples[year].append([producedYear, 'Other', tier, size])
+        diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size / PETA
+    for tier, spaces in model['static_tape'].items():
+        size, producedYear = time_dependent_value(year=year, values=spaces)
+        dataOnTape[year]['Other'][tier] += size
+        tapeSamples[year].append([producedYear, 'Other', tier, size])
+        tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size / PETA
+
+    # Figure out data from this year and previous
     for producedYear, dataDict in dataProduced.items():
         for dataType, tierDict in dataDict.items():
             for tier, size in tierDict.items():
@@ -128,13 +142,16 @@ for year in YEARS:
                         dataOnTape[year][dataType][tier] += size * revOnTape
                         tapeSamples[year].append([producedYear, dataType, tier, size * revOnTape, revOnTape])
                         tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape / PETA
+
+    # Add capacity numbers
     diskByYear[YEARS.index(year)][YearColumns.index('Capacity')] = diskCapacity[str(year)] / PETA
     diskByYear[YEARS.index(year)][YearColumns.index('Year')] = str(year)
     tapeByYear[YEARS.index(year)][YearColumns.index('Capacity')] = tapeCapacity[str(year)] / PETA
     tapeByYear[YEARS.index(year)][YearColumns.index('Year')] = str(year)
 
 # Initialize a matrix with tiers and years
-TierColumns = TIERS + ['Capacity', 'Year']  # Add capacity as last column
+# Add capacity, years, and fake tiers as columns for the data frame
+TierColumns = TIERS + ['Capacity', 'Year'] + STATIC_TIERS
 
 diskByTier = [[0 for _i in range(len(TierColumns))] for _j in YEARS]
 tapeByTier = [[0 for _i in range(len(TierColumns))] for _j in YEARS]
@@ -154,9 +171,9 @@ for year, dataDict in dataOnTape.items():
 plotStorage(producedByTier, name='Produced by Tier.png', title='Data produced by tier', columns=TIERS, index=YEARS)
 
 plotStorageWithCapacity(tapeByTier, name='Tape by Tier.png', title='Data on tape by tier', columns=TierColumns,
-                        bars=TIERS)
+                        bars=TIERS + STATIC_TIERS)
 plotStorageWithCapacity(diskByTier, name='Disk by Tier.png', title='Data on disk by tier', columns=TierColumns,
-                        bars=TIERS)
+                        bars=TIERS + STATIC_TIERS)
 plotStorageWithCapacity(tapeByYear, name='Tape by Year.png', title='Data on tape by year produced', columns=YearColumns,
                         bars=YEARS)
 plotStorageWithCapacity(diskByYear, name='Disk by Year.png', title='Data on disk by year produced', columns=YearColumns,
