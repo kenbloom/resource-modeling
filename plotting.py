@@ -28,10 +28,10 @@ def plotStorageWithCapacity(data, name, title='', columns=None, bars=None):
 
 
 def plotStorage(data, name, title='', columns=None, index=None):
-    columns = sorted(columns, key=SORT_ORDER.index)
     # Make the plot of produced data per year (input to other plots)
+    plot_order = sorted(columns, key=SORT_ORDER.index)
     frame = pd.DataFrame(data, columns=columns, index=index)
-    ax = frame.plot(kind='bar', stacked=True, colormap=COLOR_MAP)
+    ax = frame[plot_order].plot(kind='bar', stacked=True, colormap=COLOR_MAP)
     ax.set(ylabel='PB', title=title)
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
