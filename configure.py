@@ -53,7 +53,7 @@ def run_model(model, year, data_type='data'):
     """
     :param model: The configuration dictionary
     :param year: The year the model is being queried for
-    :param dataType: The type of data (MC or data)
+    :param data_type: The type of data (MC or data)
     :return: data events, in_shutdown
     """
 
@@ -68,3 +68,56 @@ def run_model(model, year, data_type='data'):
     if data_type == 'mc':
         events *= model['mc_event_factor']
     return RunModel(events, inShutdown)
+
+
+def mc_event_model(model, year):
+    """
+    Given the various types of MC and their fraction compared to data in mc_evolution,
+    for a the queried year, return the number of events needed to be simulated of each
+    "MC year" in that calendar year.
+
+    :param model: The configuration dictionary
+    :param year: The year the model is being queried for
+    :return: dictionary of {year1: events, year2: events} of types of events needed to be simualted
+    """
+
+    mcEvolution = model['mc_evolution']
+    mcEvents = {}
+    for mcType, ramp in mcEvolution.items():
+        mcYear = int(mcType)
+
+        # First figure out what to base the number of MC events
+        currEvents = run_model(model, year).events
+        if in_shutdown(model, year)[0]:
+            lastYear = in_shutdown(model, year)[1]
+            lastEvents = run_model(model, lastYear).events
+        else:
+            lastEvents = 0
+
+        if mcYear > year:
+            futureEvents = run_model(model, mcYear).events
+        else:
+            futureEvents = 0
+        dataEvents = max(currEvents, lastEvents, futureEvents)
+
+        pastYear = 0
+        futureYear = 3000
+        mc_fraction = None
+        for otherType in sorted(ramp):
+            otherYear = int(otherType)
+            if year == otherYear:  # We found the exact value
+                mc_fraction = ramp[otherType]
+                break
+            if year - otherYear < year - pastYear and year > otherYear:
+                pastYear = otherYear
+            if otherYear > year:
+                futureYear = otherYear
+                break
+
+        if mc_fraction is None:  # We didn't get an exact value, interpolate between two values
+            mc_fraction = (ramp[str(pastYear)] + (year - pastYear) *
+                           (ramp[str(futureYear)] - ramp[str(pastYear)])  / (futureYear - pastYear))
+
+        mcEvents[mcType] = mc_fraction * dataEvents
+
+    return mcEvents
