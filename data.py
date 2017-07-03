@@ -13,7 +13,7 @@ import json
 import sys
 from collections import defaultdict
 
-from configure import configure, in_shutdown, run_model
+from configure import configure, in_shutdown, mc_event_model, run_model
 from plotting import plotStorage, plotStorageWithCapacity
 from utils import performance_by_year, time_dependent_value
 
@@ -91,11 +91,14 @@ for tier in TIERS:
 # Loop over years to determine how much is produced without versions or replicas
 for year in YEARS:
     for tier in TIERS:
-        dummyCPU, tierSize = performance_by_year(model, year, tier)
         if tier not in model['mc_only_tiers']:
+            dummyCPU, tierSize = performance_by_year(model, year, tier, data_type='data')
             dataProduced[year]['data'][tier] += tierSize * run_model(model, year, data_type='data').events
         if tier not in model['data_only_tiers']:
-            dataProduced[year]['mc'][tier] += tierSize * run_model(model, year, data_type='mc').events
+            mcEvents = mc_event_model(model, year)
+            for kind, events in mcEvents.items():
+                dummyCPU, tierSize = performance_by_year(model, year, tier, data_type='mc', kind=kind)
+                dataProduced[year]['mc'][tier] += tierSize * events
 
 producedByTier = [[0 for _i in range(len(TIERS))] for _j in YEARS]
 for year, dataDict in dataProduced.items():
