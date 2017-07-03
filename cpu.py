@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import json
-from configure import configure, run_model
+from configure import configure, run_model, mc_event_model
 from utils import performance_by_year
 
 # Basic parameters
@@ -54,8 +54,18 @@ sim_time = {year: performance_by_year(model, year, 'GENSIM', data_type='mc')[0] 
 data_events = {i: run_model(model, i, data_type='data').events for i in YEARS}
 mc_events = {i: run_model(model, i, data_type='mc').events for i in YEARS}
 
+lhc_mc_events = {i: mc_event_model(model, i)['2017'] for i in YEARS}
+hllhc_mc_events = {i: mc_event_model(model, i)['2026'] for i in YEARS}
+
+for i in YEARS:
+    print(i, lhc_mc_events[i])
+    print(i, hllhc_mc_events[i])
+    
+
 data_cpu_time = {i : data_events[i] * reco_time[i] for i in YEARS}
 mc_cpu_time = {i : mc_events[i] * sim_time[i] for i in YEARS}
+lhc_mc_cpu_time = {i : lhc_mc_events[i] * sim_time[i] for i in YEARS}
+hllhc_mc_cpu_time = {i : hllhc_mc_events[i] * sim_time[i] for i in YEARS}
 
 # The data need to be reconstructed about as quickly as we record them.  In
 # addition, we need to factor in express, repacking, AlCa, CAF
