@@ -8,7 +8,7 @@ Common code between various models
 from __future__ import absolute_import, division, print_function
 
 
-def performance_by_year(model, year, tier, data_type=None):
+def performance_by_year(model, year, tier, data_type=None, kind=None):
     """
     Return various performance metrics based on the year under consideration
     (allows for step and continuous variations)
@@ -17,13 +17,18 @@ def performance_by_year(model, year, tier, data_type=None):
     :param year: The year in which processing is done
     :param tier: Data tier produced
     :param data_type: data or mc
+    :param kind: The year flavor of MC or data. May differ from actual running year
 
     :return:  tuple of cpu time (HS06) and data size
     """
 
+    # If we don't specify flavors, assume we are talking about the current year
+    if not kind:
+        kind = year
+
     try:
         for modelYear in sorted(model['tier_sizes'][tier].keys()):
-            if int(year) >= int(modelYear):
+            if int(kind) >= int(modelYear):
                 sizePerEvent = model['tier_sizes'][tier][modelYear]
     except KeyError:  # Storage model does not know this tier
         sizePerEvent = None
@@ -31,10 +36,10 @@ def performance_by_year(model, year, tier, data_type=None):
     try:
         # Look up the normalized processing time
         for modelYear in sorted(model['cpu_time'][data_type][tier].keys()):
-            if int(year) >= int(modelYear):
+            if int(kind) >= int(modelYear):
                 cpuPerEvent = model['cpu_time'][data_type][tier][modelYear]
 
-                # Apply the year by year correction
+        # Apply the year by year correction
         cpuPerEvent = cpuPerEvent / (model['improvement_factors']['software']) ** (1 + year - model['start_year'])
     except KeyError:  # CPU model does not know this tier
         cpuPerEvent = None
