@@ -21,6 +21,8 @@ def plotStorageWithCapacity(data, name, title='', columns=None, bars=None):
     ax = frame[['Capacity', 'Year']].plot(x='Year', linestyle='-', marker='o', color='Black')
     frame[bars + ['Year']].plot(x='Year', kind='bar', stacked=True, ax=ax, colormap=COLOR_MAP)
     ax.set(ylabel='PB', title=title)
+
+    ax.legend(loc='best', markerscale=0.25, fontsize=11)
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
     fig = ax.get_figure()
@@ -33,6 +35,8 @@ def plotStorage(data, name, title='', columns=None, index=None):
     frame = pd.DataFrame(data, columns=columns, index=index)
     ax = frame[plot_order].plot(kind='bar', stacked=True, colormap=COLOR_MAP)
     ax.set(ylabel='PB', title=title)
+
+    ax.legend(loc='best', markerscale=0.25, fontsize=11)
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
     fig = ax.get_figure()
