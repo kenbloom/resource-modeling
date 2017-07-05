@@ -43,6 +43,8 @@ def plotEvents(data, name, title='', columns=None, index=None):
     # Make the plot of produced events per year by type (input to other plots)
     plot_order = sorted(columns)
     frame = pd.DataFrame(data, columns=columns, index=index)
+    print(title)
+    print(frame)
     ax = frame[plot_order].plot(kind='bar', stacked=True, colormap=COLOR_MAP)
     ax.set(ylabel='Billions of events', title=title)
     for tick in ax.get_xticklabels():
