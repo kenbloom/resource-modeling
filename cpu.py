@@ -66,6 +66,7 @@ data_events = {i: run_model(model, i, data_type='data').events for i in YEARS}
 lhc_mc_events = {i: mc_event_model(model, i)['2017'] for i in YEARS}
 hllhc_mc_events = {i: mc_event_model(model, i)['2026'] for i in YEARS}
 
+#Note the quantity below is for prompt reco only.
 data_cpu_time = {i : data_events[i] * reco_time[i] for i in YEARS}
 
 lhc_mc_cpu_time = {i : lhc_mc_events[i] * lhc_sim_time[i] for i in YEARS}
@@ -77,19 +78,23 @@ hllhc_mc_cpu_time = {i : hllhc_mc_events[i] * hllhc_sim_time[i] for i in YEARS}
 # Per the latest CRSG document, these total to 123 kHS06 compared to 240
 # kHS016 for the prompt reconstruction, which we can round to 50%, so
 # multiply by 50%.  (Ignoring the 10 kHS06 needed for VO boxes, which
-# won't scale up and is also pretty small.)  In-year reprocessing model:
-# assume we will re-reco 10% of the data each year, but we want to
-# complete it in one month.
+# won't scale up and is also pretty small.)
 
-
-data_cpu_required = {i : (1.5 * data_cpu_time[i] / running_time
-                              + 0.1 * data_cpu_time[i] / seconds_per_month)
+data_cpu_required = {i : (1.5 * data_cpu_time[i] / running_time)
                          for i in YEARS}
 
 # Also keep using the _time variables to sum up the total HS06 * s needed,
 # which frees us from assumptions on time needed to complete the work.
 
-data_cpu_time = {i : 1.6 * data_cpu_time[i] for i in YEARS}
+data_cpu_time = {i : 1.5 * data_cpu_time[i] for i in YEARS}
+
+# In-year reprocessing model: assume we will re-reco 10% of the data each
+# year, but we want to complete it in one month.
+
+
+rereco_cpu_required = {i : (0.1 * data_cpu_time[i] / seconds_per_month)
+                         for i in YEARS}
+rereco_cpu_time = {i : (0.1 * data_cpu_time[i]) for i in YEARS}
     
 # The corresponding MC, on the other hand, can be reconstructed over an
 # entire year.  We can use this to calculate the HS06 needed to do those
@@ -113,24 +118,31 @@ for i in YEARS:
 # Analysis!  In the current resource request, the amount requested for
 # analysis is within 10% of the total CPU for prompt reco plus MC at T1 and T2.  So, just set analysis equal to data + mc above.
 
-analysis_cpu_required = {i : lhc_mc_cpu_required[i] + hllhc_mc_cpu_required[i] + data_cpu_required[i] for i in YEARS}
+analysis_cpu_required = {i : lhc_mc_cpu_required[i] + hllhc_mc_cpu_required[i] +
+                             data_cpu_required[i] + rereco_cpu_required[i]
+                             for i in YEARS}
 
-analysis_cpu_time = {i : data_cpu_time[i] + lhc_mc_cpu_time[i] +
-                         hllhc_mc_cpu_time[i] for i in YEARS}
+analysis_cpu_time = {i : data_cpu_time[i] + rereco_cpu_time[i] +
+                         lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]
+                         for i in YEARS}
 
 # Shutdown year model:
 
 # If in the first year of a shutdown, need to reconstruct the previous
 # three years of data, but you have all year to do it.  No need for all the
-# ancillary stuff.
+# ancillary stuff.  We need to do the MC also...assume similarly that we
+# have three times as many events as we had the previous year.
 
 for i in YEARS:
     shutdown_this_year, dummy = in_shutdown(model,i)
     shutdown_last_year, dummy = in_shutdown(model,i-1)
     if (shutdown_this_year and not(shutdown_last_year)):
         data_events[i] = 3 * data_events[i-1] 
-        data_cpu_time[i] = 3 * data_events[i] * reco_time[i]
-        data_cpu_required[i] = data_cpu_time[i] / seconds_per_year
+        rereco_cpu_time[i] = data_events[i] * reco_time[i]
+        rereco_cpu_required[i] = data_cpu_time[i] / seconds_per_year
+        lhc_mc_events[i] = 3 * lhc_mc_events[i-1] 
+        lhc_mc_cpu_time[i] = data_events[i] * lhc_sim_time[i]
+        lhc_mc_cpu_required[i] = lhc_mc_cpu_time[i] / seconds_per_year
         
 # But we still do analysis in years where we don't record data.  Set
 # analysis for that year equal to the most recent running year.
@@ -142,11 +154,13 @@ for i in YEARS:
         
 # Sum up everything
         
-total_cpu_required = {i : data_cpu_required[i] + lhc_mc_cpu_required[i] +
+total_cpu_required = {i : data_cpu_required[i] + rereco_cpu_required[i] +
+                          lhc_mc_cpu_required[i] +
                           hllhc_mc_cpu_required[i] +
                           analysis_cpu_required[i] for i in YEARS}
 
-total_cpu_time = {i: data_cpu_time[i] + lhc_mc_cpu_time[i] +
+total_cpu_time = {i: data_cpu_time[i] + rereco_cpu_time[i] +
+                      lhc_mc_cpu_time[i] +
                       hllhc_mc_cpu_time[i] + analysis_cpu_time[i]
                       for i in YEARS}
     
@@ -169,11 +183,11 @@ cpu_capacity = {2016 : 1.4 * mega}
 # This variable assumes that you can have the cpu_capacity for an entire
 # year and thus calculates the HS06 * s available (in principle).
 
-cpu_time_capacity = {2016 : 1.4 * mega * seconds_per_year}
+cpu_time_capacity = {2016 : 1.4 * mega}
 
 for i in YEARS:
     cpu_capacity[i] = cpu_capacity[i-1] * (1 - retirement_rate) + (300 if i < 2020 else 600) * kilo * cpu_improvement[i]
-    cpu_time_capacity[i] = cpu_capacity[i] * seconds_per_year
+    cpu_time_capacity[i] = cpu_capacity[i]
     
 del cpu_capacity[2016]
 del cpu_time_capacity[2016]    
@@ -182,7 +196,7 @@ del cpu_time_capacity[2016]
 
 # Set the initial points
 cpuCapacity = {str(model['capacity_model']['cpu_year']): model['capacity_model']['cpu_start']}
-cpuTimeCapacity = {str(model['capacity_model']['cpu_year']): model['capacity_model']['cpu_start']*seconds_per_year}
+cpuTimeCapacity = {str(model['capacity_model']['cpu_year']): model['capacity_model']['cpu_start']}
 
 
 # A bit of a kludge. Assume what we have now was bought and will be retired in equal chunks over its lifetime
@@ -209,11 +223,12 @@ for year in YEARS:
 
         cpuRetired = cpuAdded.get(str(int(year) - model['capacity_model']['cpu_lifetime']), 0)
         cpuCapacity[str(year)] = cpuCapacity[str(int(year) - 1)] + cpuAdded[str(year)] - cpuRetired
-        cpuTimeCapacity[str(year)] = cpuCapacity[str(year)] * seconds_per_year
+        cpuTimeCapacity[str(year)] = cpuCapacity[str(year)]
 
 print("CPU requirements in HS06")
 for i in YEARS:
     print(i, '{:04.3f}'.format(data_cpu_required[i] / mega),
+    '{:04.3f}'.format(rereco_cpu_required[i] / mega),
     '{:04.3f}'.format(lhc_mc_cpu_required[i] / mega),
     '{:04.3f}'.format(hllhc_mc_cpu_required[i] / mega),
     '{:04.3f}'.format(analysis_cpu_required[i] / mega),
@@ -222,16 +237,17 @@ for i in YEARS:
     '{:04.3f}'.format(cpuCapacity[str(i)] / mega), 'MHS06',
     '{:04.3f}'.format(total_cpu_required[i]/cpuCapacity[str(i)])
               )
-print("CPU requirements in HS06 * s")
+print("CPU requirements in HS06 * years")
 for i in YEARS:
-    print(i, '{:04.3f}'.format(data_cpu_time[i] / tera),
-    '{:04.3f}'.format(lhc_mc_cpu_time[i] / tera),
-    '{:04.3f}'.format(hllhc_mc_cpu_time[i] / tera),
-    '{:04.3f}'.format(analysis_cpu_time[i] / tera),
-    '{:04.3f}'.format(total_cpu_time[i] / tera),
-    '{:04.3f}'.format(cpu_time_capacity[i] / tera), 
-    '{:04.3f}'.format(cpuTimeCapacity[str(i)] / tera), 'THS06 * s',
-    '{:04.3f}'.format(total_cpu_time[i]/cpuTimeCapacity[str(i)])
+    print(i, '{:04.3f}'.format(data_cpu_time[i] / mega / seconds_per_year),
+    '{:04.3f}'.format(rereco_cpu_time[i] / mega / seconds_per_year),
+    '{:04.3f}'.format(lhc_mc_cpu_time[i] / mega / seconds_per_year),
+    '{:04.3f}'.format(hllhc_mc_cpu_time[i] / mega / seconds_per_year),
+    '{:04.3f}'.format(analysis_cpu_time[i] / mega / seconds_per_year),
+    '{:04.3f}'.format(total_cpu_time[i] / mega / seconds_per_year),
+    '{:04.3f}'.format(cpu_time_capacity[i] / mega), 
+    '{:04.3f}'.format(cpuTimeCapacity[str(i)] / mega), 'THS06 * y',
+    '{:04.3f}'.format(total_cpu_time[i] /seconds_per_year /cpuTimeCapacity[str(i)])
               )
 
     
@@ -242,6 +258,9 @@ for i in YEARS:
 cpuDataList = []
 for year, item in sorted(data_cpu_required.items()):
     cpuDataList.append(item/mega)
+cpuRerecoList = []
+for year, item in sorted(rereco_cpu_required.items()):
+    cpuRerecoList.append(item/mega)
 cpuLHCMCList = []
 for year, item in sorted(lhc_mc_cpu_required.items()):
     cpuLHCMCList.append(item/mega)
@@ -261,7 +280,26 @@ for year, item in sorted(cpuCapacity.items()):
 # Build a data frame from lists:
 
 cpuFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
-                             'Data' : cpuDataList,
+                             'Prompt Data' : cpuDataList,
+                             'Non-Prompt Data' : cpuRerecoList,
+                             'LHC MC' : cpuLHCMCList,
+                             'HL-LHC MC' : cpuHLLHCMCList,
+                             'Analysis' : cpuAnaList}
+                            )
+
+
+ax = cpuFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC',
+                   'Analysis']].plot(x='Year',kind='bar',stacked=True)
+ax.set(ylabel='MHS06')
+ax.set(title='Software improvement = %s' %
+           (software_improvement_factor))
+
+fig = ax.get_figure()
+fig.savefig('CPU by Type.png')
+
+cpuCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
+                             'Prompt Data' : cpuDataList,
+                             'Non-Prompt Data' : cpuRerecoList,
                              'LHC MC' : cpuLHCMCList,
                              'HL-LHC MC' : cpuHLLHCMCList,
                              'Analysis' : cpuAnaList,
@@ -270,59 +308,82 @@ cpuFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
                             )
 
 
-ax = cpuFrame[['Year','Capacity, 5% retirement']].plot(x='Year',linestyle='-',marker='o', color='Red')
-cpuFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',linestyle='-',marker='o', color='Blue',ax=ax)
-cpuFrame[['Year', 'Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax)
+ax = cpuCapacityFrame[['Year','Capacity, 5% retirement']].plot(x='Year',linestyle='-',marker='o', color='Red')
+cpuCapacityFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',linestyle='-',marker='o', color='Blue',ax=ax)
+cpuCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC',
+                      'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax)
 ax.set(ylabel='MHS06')
 ax.set(title='CPU improvement %s Software improvement = %s' %
            (cpu_improvement_factor, software_improvement_factor))
 
 fig = ax.get_figure()
-fig.savefig('CPU by Type.png')
+fig.savefig('CPU by Type and Capacity.png')
 
-# Do the same thing for the HS06 * s
+# Do the same thing for the HS06 * year
 
 # Squirt the dictionary entries into lists:
 
 cpuDataTimeList = []
 for year, item in sorted(data_cpu_time.items()):
-    cpuDataTimeList.append(item/tera)
+    cpuDataTimeList.append(item/mega / seconds_per_year)
+cpuRerecoTimeList = []
+for year, item in sorted(rereco_cpu_time.items()):
+    cpuRerecoTimeList.append(item/mega / seconds_per_year)
 cpuLHCMCTimeList = []
 for year, item in sorted(lhc_mc_cpu_time.items()):
-    cpuLHCMCTimeList.append(item/tera)
+    cpuLHCMCTimeList.append(item/mega / seconds_per_year)
 cpuHLLHCMCTimeList = []
 for year, item in sorted(hllhc_mc_cpu_time.items()):
-    cpuHLLHCMCTimeList.append(item/tera)
+    cpuHLLHCMCTimeList.append(item/mega / seconds_per_year)
 cpuAnaTimeList = []
 for year, item in sorted(analysis_cpu_time.items()):
-    cpuAnaTimeList.append(item/tera)
+    cpuAnaTimeList.append(item/mega / seconds_per_year)
 cpuCapacityTimeList = []
 for year, item in sorted(cpu_time_capacity.items()):
-    cpuCapacityTimeList.append(item/tera)
+    cpuCapacityTimeList.append(item/mega)
 altCapacityTimeList = []
 for year, item in sorted(cpuTimeCapacity.items()):
-    altCapacityTimeList.append(item/tera)
+    altCapacityTimeList.append(item/mega)
     
 # Build a data frame from lists:
 
 cpuTimeFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
-                             'Data' : cpuDataTimeList,
+                             'Prompt Data' : cpuDataTimeList,
+                             'Non-Prompt Data' : cpuRerecoTimeList,
                              'LHC MC' : cpuLHCMCTimeList,
                              'HL-LHC MC' : cpuHLLHCMCTimeList,
-                             'Analysis' : cpuAnaTimeList,
-                             'Capacity, 5% retirement' : cpuCapacityTimeList,
-                             'Capacity, 5 year retirement' : altCapacityTimeList}
+                             'Analysis' : cpuAnaTimeList}
                             )
 
 
-ax = cpuTimeFrame[['Year','Capacity, 5% retirement']].plot(x='Year',linestyle='-',marker='o', color='Red')
-cpuTimeFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',linestyle='-',marker='o', color='Blue',ax=ax)
-cpuTimeFrame[['Year', 'Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax)
-ax.set(ylabel='THS06 * s')
+ax = cpuTimeFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True)
+ax.set(ylabel='MHS06 * years')
+ax.set(title='Software improvement = %s' %
+           (software_improvement_factor))
+
+fig = ax.get_figure()
+fig.savefig('CPU seconds by Type.png')
+
+
+cpuTimeCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
+                                'Prompt Data' : cpuDataTimeList,
+                                'Non-Prompt Data' : cpuRerecoTimeList,
+                                'LHC MC' : cpuLHCMCTimeList,
+                                'HL-LHC MC' : cpuHLLHCMCTimeList,
+                                'Analysis' : cpuAnaTimeList,
+                                'Capacity, 5% retirement' : cpuCapacityTimeList,
+                                    'Capacity, 5 year retirement' : altCapacityTimeList}
+                                )
+
+
+ax = cpuTimeCapacityFrame[['Year','Capacity, 5% retirement']].plot(x='Year',linestyle='-',marker='o', color='Red')
+cpuTimeCapacityFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',linestyle='-',marker='o', color='Blue',ax=ax)
+cpuTimeCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax)
+ax.set(ylabel='MHS06 * years')
 ax.set(title='CPU improvement %s Software improvement = %s' %
            (cpu_improvement_factor, software_improvement_factor))
 
 fig = ax.get_figure()
-fig.savefig('CPU seconds by Type.png')
+fig.savefig('CPU seconds by Type and Capacity.png')
 
 
