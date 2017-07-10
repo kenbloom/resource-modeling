@@ -121,8 +121,8 @@ for i in YEARS:
             hllhc_mc_cpu_required[i] = hllhc_mc_cpu_time[i]/ (seconds_per_year / 2)
             
 
-# Analysis!  Following something like the resource request, we make this
-# 75% of everything else.
+# Analysis!  Following something like the 2018 resource request, we make this
+# 75% of everything else (for a moment).
 
 analysis_cpu_required = {i : 0.75 *
                              (lhc_mc_cpu_required[i] + hllhc_mc_cpu_required[i] +
@@ -133,6 +133,25 @@ analysis_cpu_time = {i : 0.75* (data_cpu_time[i] + rereco_cpu_time[i] +
                          lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i])
                          for i in YEARS}
 
+# But do something a little funkier for the time up to HL-LHC.  We are
+# accumulating data, so analysis should keep taking longer.  Assume 2018 is
+# "right".  In 2019 we will analyze 2018 data in addition to 2016 and 2017,
+# so make 2019 1/3 bigger.  Keep the same amount through the shutdown when
+# we don't accumulate data.  Then after the shutdown we keep adding in data
+# years that are the same size as the previous ones, and then keep that
+# flat until we ramp up HL-LHC studies in 2025 and we revert back to the
+# 75% model.  Implemented here as a complete kludge.  Note that by kludging
+# this way we don't absorb the software improvement factors...but that's
+# OK, the analysis is I/O bound anyway and doesn't benefit from such
+# improvements.
+
+analysis_cpu_time[2019] = (4/3) * analysis_cpu_time[2018]
+analysis_cpu_time[2020] = analysis_cpu_time[2019]
+analysis_cpu_time[2021] = analysis_cpu_time[2019]
+analysis_cpu_time[2022] = (5/4)* analysis_cpu_time[2021]
+analysis_cpu_time[2023] = (6/5)* analysis_cpu_time[2022]
+analysis_cpu_time[2024] = (7/6)* analysis_cpu_time[2023]
+    
 # Shutdown year model:
 
 # If in the first year of a shutdown, need to reconstruct the previous
@@ -151,14 +170,7 @@ for i in YEARS:
         lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i]
         lhc_mc_cpu_required[i] = lhc_mc_cpu_time[i] / seconds_per_year
         
-# But we still do analysis in years where we don't record data.  Set
-# analysis for that year equal to the most recent running year.
 
-for i in YEARS:
-    if analysis_cpu_required[i] == 0:
-        analysis_cpu_required[i] = analysis_cpu_required[i-1]
-        analysis_cpu_time[i] = analysis_cpu_time[i-1]
-        
 # Sum up everything
         
 total_cpu_required = {i : data_cpu_required[i] + rereco_cpu_required[i] +
