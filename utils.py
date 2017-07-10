@@ -19,7 +19,7 @@ def performance_by_year(model, year, tier, data_type=None, kind=None):
     :param data_type: data or mc
     :param kind: The year flavor of MC or data. May differ from actual running year
 
-    :return:  tuple of cpu time (HS06) and data size
+    :return:  tuple of cpu time (HS06 * s) and data size
     """
 
     # If we don't specify flavors, assume we are talking about the current year
