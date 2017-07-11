@@ -98,7 +98,7 @@ data_cpu_time = {i : 1.5 * data_cpu_time[i] for i in YEARS}
 # year) but we want to do that in three months.
 
 rereco_cpu_required = {i : max(0.25 * data_events[i] * reco_time[i]/ seconds_per_month,
-                                data_cpu_time[i] / (3 * seconds_per_month))
+                                data_events[i] * reco_time[i] / (3 * seconds_per_month))
                          for i in YEARS}
 
 # But the total time needed is the sum of both activities.
