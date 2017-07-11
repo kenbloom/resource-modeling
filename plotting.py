@@ -18,8 +18,9 @@ COLOR_MAP = 'Paired'
 def plotStorageWithCapacity(data, name, title='', columns=None, bars=None):
     bars = sorted(bars, key=SORT_ORDER.index)
     frame = pd.DataFrame(data, columns=columns)
-    ax = frame[['Capacity', 'Year']].plot(x='Year', linestyle='-', marker='o', color='Black')
-    frame[bars + ['Year']].plot(x='Year', kind='bar', stacked=True, ax=ax, colormap=COLOR_MAP)
+    # ax = frame[['Capacity', 'Year']].plot(x='Year', linestyle='-', marker='o', color='Black')
+    # ax = frame[bars + ['Year']].plot(x='Year', kind='bar', stacked=True, ax=ax, colormap=COLOR_MAP)
+    ax = frame[bars + ['Year']].plot(x='Year', kind='bar', stacked=True, colormap=COLOR_MAP)
     ax.set(ylabel='PB', title=title)
 
     ax.legend(loc='best', markerscale=0.25, fontsize=11)
