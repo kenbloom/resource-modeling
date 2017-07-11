@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 """
-Usage: ./cpa.py config1.json,config2.json,...,configN.json
+Usage: ./cpu.py config1.json,config2.json,...,configN.json
 
 Determine the CPU model by running under various configuration changes. BaseModel.json and RealisticModel.json
 provide defaults and configN.json overrides values in those configs or earlier ones in the list
@@ -154,7 +154,7 @@ analysis_cpu_time[2021] = analysis_cpu_time[2019]
 analysis_cpu_time[2022] = (5/4)* analysis_cpu_time[2021]
 analysis_cpu_time[2023] = (6/5)* analysis_cpu_time[2022]
 analysis_cpu_time[2024] = (7/6)* analysis_cpu_time[2023]
-    
+
 # Shutdown year model:
 
 # If in the first year of a shutdown, need to reconstruct the previous
@@ -166,20 +166,16 @@ for i in YEARS:
     shutdown_this_year, dummy = in_shutdown(model,i)
     shutdown_last_year, dummy = in_shutdown(model,i-1)
     if (shutdown_this_year and not(shutdown_last_year)):
-        print(i)
         data_events[i] = 3 * data_events[i-1]
-        print(data_events[i])
         rereco_cpu_time[i] = data_events[i] * reco_time[i]
-        print(rereco_cpu_time[i])
-        print(reco_time[i-1],reco_time[i])
         rereco_cpu_required[i] = rereco_cpu_time[i] / seconds_per_year
-        lhc_mc_events[i] = 3 * lhc_mc_events[i-1] 
+        lhc_mc_events[i] = 3 * lhc_mc_events[i-1]
         lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i]
         lhc_mc_cpu_required[i] = lhc_mc_cpu_time[i] / seconds_per_year
-        
+
 
 # Sum up everything
-        
+
 total_cpu_required = {i : data_cpu_required[i] + rereco_cpu_required[i] +
                           lhc_mc_cpu_required[i] +
                           hllhc_mc_cpu_required[i] +
@@ -189,7 +185,7 @@ total_cpu_time = {i: data_cpu_time[i] + rereco_cpu_time[i] +
                       lhc_mc_cpu_time[i] +
                       hllhc_mc_cpu_time[i] + analysis_cpu_time[i]
                       for i in YEARS}
-    
+
 # Then, CPU availability calculations.  This follows the "Available CPU
 # power" spreadsheet.  Take a baseline value of 1.4 MHS06 in 2016, in
 # future years subtract 5% of the previous for retirements, and add 300
@@ -214,9 +210,9 @@ cpu_time_capacity = {2016 : 1.4 * mega}
 for i in YEARS:
     cpu_capacity[i] = cpu_capacity[i-1] * (1 - retirement_rate) + (300 if i < 2020 else 600) * kilo * cpu_improvement[i]
     cpu_time_capacity[i] = cpu_capacity[i] * seconds_per_year
-    
+
 del cpu_capacity[2016]
-del cpu_time_capacity[2016]    
+del cpu_time_capacity[2016]
 
 # CPU capacity model ala data.py
 
@@ -242,7 +238,7 @@ for year in YEARS:
             if int(year) >= int(deltaYear):
                 lastCpuYear = int(deltaYear)
                 cpuDelta = model['capacity_model']['cpu_delta'][deltaYear]
-                
+
         cpuAdded[str(year)] = cpuDelta * cpuFactor ** (int(year) - int(lastCpuYear))
 
         # Retire cpu added N years ago or retire 0
@@ -259,7 +255,7 @@ for i in YEARS:
     '{:04.3f}'.format(hllhc_mc_cpu_required[i] / mega),
     '{:04.3f}'.format(analysis_cpu_required[i] / mega),
     '{:04.3f}'.format(total_cpu_required[i] / mega),
-    '{:04.3f}'.format(cpu_capacity[i] / mega), 
+    '{:04.3f}'.format(cpu_capacity[i] / mega),
     '{:04.3f}'.format(cpuCapacity[str(i)] / mega), 'MHS06',
     '{:04.3f}'.format(total_cpu_required[i]/cpuCapacity[str(i)])
               )
@@ -271,12 +267,12 @@ for i in YEARS:
     '{:04.3f}'.format(hllhc_mc_cpu_time[i] / tera),
     '{:04.3f}'.format(analysis_cpu_time[i] / tera),
     '{:04.3f}'.format(total_cpu_time[i] / tera),
-    '{:04.3f}'.format(cpu_time_capacity[i] / tera), 
+    '{:04.3f}'.format(cpu_time_capacity[i] / tera),
     '{:04.3f}'.format(cpuTimeCapacity[str(i)] / tera), 'THS06 * s',
     '{:04.3f}'.format(total_cpu_time[i] / cpuTimeCapacity[str(i)])
               )
 
-    
+
 # Plot the HS06
 
 # Squirt the dictionary entries into lists:
@@ -302,7 +298,7 @@ for year, item in sorted(cpu_capacity.items()):
 altCapacityList = []
 for year, item in sorted(cpuCapacity.items()):
     altCapacityList.append(item/mega)
-    
+
 # Build a data frame from lists:
 
 cpuFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
@@ -370,7 +366,7 @@ for year, item in sorted(cpu_time_capacity.items()):
 altCapacityTimeList = []
 for year, item in sorted(cpuTimeCapacity.items()):
     altCapacityTimeList.append(item/tera)
-    
+
 # Build a data frame from lists:
 
 cpuTimeFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
