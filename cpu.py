@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 """
-Usage: ./cpu.py config1.json,config2.json,...,configN.json
+Usage: ./cpa.py config1.json,config2.json,...,configN.json
 
 Determine the CPU model by running under various configuration changes. BaseModel.json and RealisticModel.json
 provide defaults and configN.json overrides values in those configs or earlier ones in the list
@@ -58,6 +58,10 @@ hllhc_sim_time = {year: performance_by_year(model, year, 'GENSIM',
                         performance_by_year(model, year, 'RECO',
                                             data_type='mc', kind='2026')[0] for year in YEARS}
 
+# general pattern:
+# _required: HS06
+# _time: HS06s
+
 # CPU time requirement calculations, in HS06 * s
 # Take the running time and event rate from the model
 
@@ -80,7 +84,6 @@ hllhc_mc_cpu_time = {i : hllhc_mc_events[i] * hllhc_sim_time[i] for i in YEARS}
 # multiply by 50%.  (Ignoring the 10 kHS06 needed for VO boxes, which
 # won't scale up and is also pretty small.)
 
-
 data_cpu_required = {i : (1.5 * data_cpu_time[i] / running_time)
                          for i in YEARS}
 
@@ -94,13 +97,13 @@ data_cpu_time = {i : 1.5 * data_cpu_time[i] for i in YEARS}
 # the previous year's data (assumed to be the same number of events as this
 # year) but we want to do that in three months.
 
-rereco_cpu_required = {i : max(0.25 * data_cpu_time[i] / seconds_per_month,
+rereco_cpu_required = {i : max(0.25 * data_events[i] * reco_time[i]/ seconds_per_month,
                                 data_cpu_time[i] / (3 * seconds_per_month))
                          for i in YEARS}
 
 # But the total time needed is the sum of both activities.
     
-rereco_cpu_time = {i : (1.25 * data_cpu_time[i]) for i in YEARS}
+rereco_cpu_time = {i : (1.25 * data_events[i] * reco_time[i]) for i in YEARS}
     
 # The corresponding MC, on the other hand, can be reconstructed over an
 # entire year.  We can use this to calculate the HS06 needed to do those
@@ -163,8 +166,12 @@ for i in YEARS:
     shutdown_this_year, dummy = in_shutdown(model,i)
     shutdown_last_year, dummy = in_shutdown(model,i-1)
     if (shutdown_this_year and not(shutdown_last_year)):
+        print(i)
         data_events[i] = 3 * data_events[i-1]
+        print(data_events[i])
         rereco_cpu_time[i] = data_events[i] * reco_time[i]
+        print(rereco_cpu_time[i])
+        print(reco_time[i-1],reco_time[i])
         rereco_cpu_required[i] = rereco_cpu_time[i] / seconds_per_year
         lhc_mc_events[i] = 3 * lhc_mc_events[i-1] 
         lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i]
