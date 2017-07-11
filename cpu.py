@@ -256,7 +256,7 @@ for i in YEARS:
     '{:04.3f}'.format(cpuCapacity[str(i)] / mega), 'MHS06',
     '{:04.3f}'.format(total_cpu_required[i]/cpuCapacity[str(i)])
               )
-print("CPU requirements in HS06 * years")
+print("CPU requirements in HS06 * s")
 for i in YEARS:
     print(i, '{:04.3f}'.format(data_cpu_time[i] / tera),
     '{:04.3f}'.format(rereco_cpu_time[i] / tera),
