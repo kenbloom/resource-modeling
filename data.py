@@ -107,7 +107,7 @@ for year, dataDict in dataProduced.items():
             producedByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
 
 # Initialize a matrix with tiers and years
-YearColumns = YEARS + ['Capacity', 'Year']  # Add capacity, years as columns for data frame
+YearColumns = YEARS + ['Capacity', 'Year', 'Run1 & 2']  # Add capacity, years as columns for data frame
 
 # Initialize a matrix with years and years
 diskByYear = [[0 for _i in YearColumns] for _j in YEARS]
@@ -178,6 +178,16 @@ for year, dataDict in dataOnTape.items():
     tapeByTier[YEARS.index(year)][TierColumns.index('Capacity')] = tapeCapacity[str(year)] / PETA
     tapeByTier[YEARS.index(year)][TierColumns.index('Year')] = str(year)
 
+diskByTier[YEARS.index(2017)][TierColumns.index('Run1 & 2')] = 25
+diskByTier[YEARS.index(2018)][TierColumns.index('Run1 & 2')] = 10
+diskByTier[YEARS.index(2019)][TierColumns.index('Run1 & 2')] = 5
+diskByTier[YEARS.index(2020)][TierColumns.index('Run1 & 2')] = 0
+
+diskByYear[YEARS.index(2017)][YearColumns.index('Run1 & 2')] = 25
+diskByYear[YEARS.index(2018)][YearColumns.index('Run1 & 2')] = 10
+diskByYear[YEARS.index(2019)][YearColumns.index('Run1 & 2')] = 5
+diskByYear[YEARS.index(2020)][YearColumns.index('Run1 & 2')] = 0
+
 plotStorage(producedByTier, name='Produced by Tier.png', title='Data produced by tier', columns=TIERS, index=YEARS)
 
 plotStorageWithCapacity(tapeByTier, name='Tape by Tier.png', title='Data on tape by tier', columns=TierColumns,
@@ -187,7 +197,7 @@ plotStorageWithCapacity(diskByTier, name='Disk by Tier.png', title='Data on disk
 plotStorageWithCapacity(tapeByYear, name='Tape by Year.png', title='Data on tape by year produced', columns=YearColumns,
                         bars=YEARS)
 plotStorageWithCapacity(diskByYear, name='Disk by Year.png', title='Data on disk by year produced', columns=YearColumns,
-                        bars=YEARS)
+                        bars=YEARS + ['Run1 & 2'])
 
 # Dump out tuples of all the data on tape and disk in a given year
 with open('disk_samples.json', 'w') as diskUsage, open('tape_samples.json', 'w') as tapeUsage:
