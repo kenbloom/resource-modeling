@@ -80,6 +80,7 @@ dataOnTape = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))  # dat
 diskSamples = defaultdict(list)
 tapeSamples = defaultdict(list)
 
+
 diskCopies = {}
 tapeCopies = {}
 for tier in TIERS:
@@ -87,6 +88,7 @@ for tier in TIERS:
                         zip(model['storage_model']['versions'][tier], model['storage_model']['disk_replicas'][tier])]
     # Assume we have the highest number of versions in year 1, save n replicas of that
     tapeCopies[tier] = model['storage_model']['versions'][tier][0] * model['storage_model']['tape_replicas'][tier]
+    if len(tapeCopies[tier]) == 0: tapeCopies[tier] = [0,0,0]
 
 # Loop over years to determine how much is produced without versions or replicas
 for year in YEARS:
@@ -195,7 +197,7 @@ plotStorageWithCapacity(tapeByTier, name='Tape by Tier.png', title='Data on tape
 plotStorageWithCapacity(diskByTier, name='Disk by Tier.png', title='Data on disk by tier', columns=TierColumns,
                         bars=TIERS + STATIC_TIERS)
 plotStorageWithCapacity(tapeByYear, name='Tape by Year.png', title='Data on tape by year produced', columns=YearColumns,
-                        bars=YEARS)
+                        bars=YEARS + ['Run1 & 2'])
 plotStorageWithCapacity(diskByYear, name='Disk by Year.png', title='Data on disk by year produced', columns=YearColumns,
                         bars=YEARS + ['Run1 & 2'])
 
