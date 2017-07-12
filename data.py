@@ -15,7 +15,8 @@ from collections import defaultdict
 
 from configure import configure, in_shutdown, mc_event_model, run_model
 from plotting import plotStorage, plotStorageWithCapacity
-from utils import performance_by_year, time_dependent_value
+from utils import time_dependent_value
+from performance import performance_by_year
 
 PETA = 1e15
 
@@ -80,7 +81,6 @@ dataOnTape = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))  # dat
 diskSamples = defaultdict(list)
 tapeSamples = defaultdict(list)
 
-
 diskCopies = {}
 tapeCopies = {}
 for tier in TIERS:
@@ -88,7 +88,7 @@ for tier in TIERS:
                         zip(model['storage_model']['versions'][tier], model['storage_model']['disk_replicas'][tier])]
     # Assume we have the highest number of versions in year 1, save n replicas of that
     tapeCopies[tier] = model['storage_model']['versions'][tier][0] * model['storage_model']['tape_replicas'][tier]
-    if not tapeCopies[tier]: tapeCopies[tier] = [0,0,0]
+    if not tapeCopies[tier]: tapeCopies[tier] = [0, 0, 0]
 
 # Loop over years to determine how much is produced without versions or replicas
 for year in YEARS:

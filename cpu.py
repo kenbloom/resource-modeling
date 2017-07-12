@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import json
 from configure import configure, run_model, mc_event_model, in_shutdown
-from utils import performance_by_year
+from performance import performance_by_year
 
 # Basic parameters
 kilo = 1000

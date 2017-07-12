@@ -100,6 +100,7 @@ def mc_event_model(model, year):
             futureEvents = 0
         dataEvents = max(currEvents, lastEvents, futureEvents)
 
+        # TODO: Replace this bit of code with interpolate_value from utils.py
         pastYear = 0
         futureYear = 3000
         mc_fraction = None
@@ -116,7 +117,7 @@ def mc_event_model(model, year):
 
         if mc_fraction is None:  # We didn't get an exact value, interpolate between two values
             mc_fraction = (ramp[str(pastYear)] + (year - pastYear) *
-                           (ramp[str(futureYear)] - ramp[str(pastYear)])  / (futureYear - pastYear))
+                           (ramp[str(futureYear)] - ramp[str(pastYear)]) / (futureYear - pastYear))
 
         mcEvents[mcType] = mc_fraction * dataEvents
 
