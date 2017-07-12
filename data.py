@@ -88,7 +88,7 @@ for tier in TIERS:
                         zip(model['storage_model']['versions'][tier], model['storage_model']['disk_replicas'][tier])]
     # Assume we have the highest number of versions in year 1, save n replicas of that
     tapeCopies[tier] = model['storage_model']['versions'][tier][0] * model['storage_model']['tape_replicas'][tier]
-    if len(tapeCopies[tier]) == 0: tapeCopies[tier] = [0,0,0]
+    if not tapeCopies[tier]: tapeCopies[tier] = [0,0,0]
 
 # Loop over years to determine how much is produced without versions or replicas
 for year in YEARS:
