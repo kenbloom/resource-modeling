@@ -8,45 +8,6 @@ Common code between various models
 from __future__ import absolute_import, division, print_function
 
 
-def performance_by_year(model, year, tier, data_type=None, kind=None):
-    """
-    Return various performance metrics based on the year under consideration
-    (allows for step and continuous variations)
-
-    :param model: The model parameters
-    :param year: The year in which processing is done
-    :param tier: Data tier produced
-    :param data_type: data or mc
-    :param kind: The year flavor of MC or data. May differ from actual running year
-
-    :return:  tuple of cpu time (HS06 * s) and data size
-    """
-
-    # If we don't specify flavors, assume we are talking about the current year
-    if not kind:
-        kind = year
-
-    try:
-        for modelYear in sorted(model['tier_sizes'][tier].keys()):
-            if int(kind) >= int(modelYear):
-                sizePerEvent = model['tier_sizes'][tier][modelYear]
-    except KeyError:  # Storage model does not know this tier
-        sizePerEvent = None
-
-    try:
-        # Look up the normalized processing time
-        for modelYear in sorted(model['cpu_time'][data_type][tier].keys()):
-            if int(kind) >= int(modelYear):
-                cpuPerEvent = model['cpu_time'][data_type][tier][modelYear]
-
-        # Apply the year by year correction
-        cpuPerEvent = cpuPerEvent / (model['improvement_factors']['software']) ** (1 + year - model['start_year'])
-    except KeyError:  # CPU model does not know this tier
-        cpuPerEvent = None
-
-    return cpuPerEvent, sizePerEvent
-
-
 def time_dependent_value(year=2016, values=None):
     """
     :param year: Year for which we are looking for parameter
@@ -64,3 +25,43 @@ def time_dependent_value(year=2016, values=None):
             value = values[deltaYear]
 
     return value, lastYear
+
+
+def interpolate_value(ramp, year):
+    """
+    Takes a dictionary of the form
+    {"2016": x,
+     "2020": y,
+     ...
+     }
+
+     and returns x for year=2016, y for year=2020, and an interpolated value for 2017, 2018, 2019
+    """
+
+    pastYear = 0
+    futureYear = 3000
+    value = None
+    for otherType in sorted(ramp):
+        otherYear = int(otherType)
+        if year == otherYear:  # We found the exact value
+            value = ramp[otherType]
+            break
+        if year - otherYear < year - pastYear and year > otherYear:
+            pastYear = otherYear
+        if otherYear > year:
+            futureYear = otherYear
+            break
+
+    if value is None:  # We didn't get an exact value, interpolate between two values
+        value = (ramp[str(pastYear)] + (year - pastYear) *
+                 (ramp[str(futureYear)] - ramp[str(pastYear)]) / (futureYear - pastYear))
+
+    return value
+
+###
+
+# from configure import configure
+#
+# model = configure(None)
+#
+# performance_by_year(model, 2023, 'RECO', data_type='mc', kind='2017')
