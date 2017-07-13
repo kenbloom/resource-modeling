@@ -155,6 +155,14 @@ analysis_cpu_time[2022] = (5/4)* analysis_cpu_time[2021]
 analysis_cpu_time[2023] = (6/5)* analysis_cpu_time[2022]
 analysis_cpu_time[2024] = (7/6)* analysis_cpu_time[2023]
 
+# More kludging: assume analysis takes place all year to calculate the HS06
+# required for the above analysis CPU time.  Eric will hate this, I do too,
+# we should fix it up later.
+
+for i in YEARS:
+    if (i >= 2019 and i < 2025):
+        analysis_cpu_required[i] = analysis_cpu_time[i]/seconds_per_year
+
 # Shutdown year model:
 
 # If in the first year of a shutdown, need to reconstruct the previous
