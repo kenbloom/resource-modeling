@@ -206,6 +206,48 @@ with open('disk_samples.json', 'w') as diskUsage, open('tape_samples.json', 'w')
     json.dump(diskSamples, diskUsage, sort_keys=True, indent=1)
     json.dump(tapeSamples, tapeUsage, sort_keys=True, indent=1)
 
+
+# disk printout
+print('\nDisk by tier printout in PB\n')
+header = "year"
+for column in TIERS + STATIC_TIERS:
+    header += ";"
+    header += str(column)
+header +=";total;40%"
+print(header)
+
+for year in YEARS:
+    line = str(year)
+    total = 0
+    for column in TIERS + STATIC_TIERS:
+        line += " " 
+        line += '{:8.2f}'.format(diskByTier[YEARS.index(year)][TierColumns.index(column)])
+        total += diskByTier[YEARS.index(year)][TierColumns.index(column)]
+    line += '{:8.2f}'.format(total)
+    line += '{:8.2f}'.format(total*0.4)
+    print(line)
+
+
+# tape printout
+print('\nTape by tier printout in PB\n')
+header = "year"
+for column in TIERS + STATIC_TIERS:
+    header += ";"
+    header += str(column)
+header +=";total;40%"
+print(header)
+
+for year in YEARS:
+    line = str(year)
+    total = 0
+    for column in TIERS + STATIC_TIERS:
+        line += " " 
+        line += '{:8.2f}'.format(tapeByTier[YEARS.index(year)][TierColumns.index(column)])
+        total += tapeByTier[YEARS.index(year)][TierColumns.index(column)]
+    line += '{:8.2f}'.format(total)
+    line += '{:8.2f}'.format(total*0.4)
+    print(line)
+
 '''
 AOD:
 current year: 1 version, fraction on disk, complete on tape
