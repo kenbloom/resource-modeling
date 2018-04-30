@@ -30,11 +30,16 @@ def performance_by_year(model, year, tier, data_type=None, kind=None):
     if not kind:
         # print year
         kind = str(year)
-    if kind not in ['2016', '2026']:
+    #print(year)
+    if kind not in ['2017', '2021', '2026']:
         if int(kind) >= 2025:
             kind = '2026'
         else:
-            kind = '2017'
+            if int(kind) >= 2020:
+                kind = '2021'
+            else:
+                kind = '2017'
+
     kind = str(kind)
 
     try:
