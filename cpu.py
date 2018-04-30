@@ -402,7 +402,7 @@ cpuTimeFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
 
 
 ax = cpuTimeFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True)
-ax.set(ylabel='MHS06 * s')
+ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type')
 
 fig = ax.get_figure()
@@ -423,7 +423,7 @@ cpuTimeCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
 ax = cpuTimeCapacityFrame[['Year','Capacity, 5% retirement']].plot(x='Year',linestyle='-',marker='o', color='Red')
 cpuTimeCapacityFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',linestyle='-',marker='o', color='Blue',ax=ax)
 cpuTimeCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax)
-ax.set(ylabel='MHS06 * s')
+ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type and Capacity')
 
 fig = ax.get_figure()
