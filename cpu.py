@@ -62,13 +62,11 @@ hllhc_sim_time = {year: performance_by_year(model, year, 'GENSIM',
 # Take the running time and event rate from the model
 
 data_events = {i: run_model(model, i, data_type='data').events for i in YEARS}
-
 lhc_mc_events = {i: mc_event_model(model, i)['2017'] for i in YEARS}
 hllhc_mc_events = {i: mc_event_model(model, i)['2026'] for i in YEARS}
 
 #Note the quantity below is for prompt reco only.
 data_cpu_time = {i : data_events[i] * reco_time[i] for i in YEARS}
-
 lhc_mc_cpu_time = {i : lhc_mc_events[i] * lhc_sim_time[i] for i in YEARS}
 hllhc_mc_cpu_time = {i : hllhc_mc_events[i] * hllhc_sim_time[i] for i in YEARS}
 
@@ -100,7 +98,6 @@ rereco_cpu_required = {i : max(0.25 * data_events[i] * reco_time[i]/ seconds_per
 # But the total time needed is the sum of both activities.
     
 rereco_cpu_time = {i : (1.25 * data_events[i] * reco_time[i]) for i in YEARS}
-    
 # The corresponding MC, on the other hand, can be reconstructed over an
 # entire year.  We can use this to calculate the HS06 needed to do those
 # tasks.
@@ -173,10 +170,14 @@ for i in YEARS:
         data_events[i] = 3 * data_events[i-1]
         rereco_cpu_time[i] = data_events[i] * reco_time[i]
         rereco_cpu_required[i] = rereco_cpu_time[i] / seconds_per_year
-        lhc_mc_events[i] = 3 * lhc_mc_events[i-1]
-        lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i]
-        lhc_mc_cpu_required[i] = lhc_mc_cpu_time[i] / seconds_per_year
-
+        if i < 2025:
+            lhc_mc_events[i] = 3 * lhc_mc_events[i-1]
+            lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i]
+            lhc_mc_cpu_required[i] = lhc_mc_cpu_time[i] / seconds_per_year
+        else:
+            hllhc_mc_events[i] = 3 * hllhc_mc_events[i-1]
+            hllhc_mc_cpu_time[i] = hllhc_mc_events[i] * hllhc_sim_time[i]
+            hllhc_mc_cpu_required[i] = hllhc_mc_cpu_time[i] / seconds_per_year
 
 # Sum up everything
 
