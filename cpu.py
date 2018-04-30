@@ -274,10 +274,8 @@ for i in YEARS:
     '{:04.3f}'.format(cpu_capacity[i] / mega),
     '{:04.3f}'.format(cpuCapacity[str(i)] / mega), 'MHS06',
     '{:04.3f}'.format(total_cpu_required[i]/cpuCapacity[str(i)]),
-    '{:04.3f}'.format(0.4* (total_cpu_required[i]-data_cpu_required[i]) / mega),
-    '{:04.3f}'.format(hpc_cpu_required[i]/
-                          (total_cpu_required[i]-data_cpu_required[i]))
-    
+    '{:04.3f}'.format(0.4* (total_cpu_required[i]) / mega),
+    '{:04.3f}'.format(hpc_cpu_required[i]/total_cpu_required[i])
               )
 
 print("CPU requirements in HS06 * s")
@@ -292,9 +290,8 @@ for i in YEARS:
     '{:03.2f}'.format(cpu_time_capacity[i] / tera),
     '{:03.2f}'.format(cpuTimeCapacity[str(i)] / tera), 'THS06 * s',
     '{:03.2f}'.format(total_cpu_time[i] / cpuTimeCapacity[str(i)]),
-    '{:03.2f}'.format(0.4* (total_cpu_time[i]-data_cpu_time[i]) / tera),
-    '{:03.2f}'.format(hpc_cpu_time[i]/
-                          (total_cpu_time[i]-data_cpu_time[i]))
+    '{:03.2f}'.format(0.4* (total_cpu_time[i]) / tera),
+    '{:03.2f}'.format(hpc_cpu_time[i]/total_cpu_time[i])
               )
 
 
