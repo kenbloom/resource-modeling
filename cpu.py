@@ -31,7 +31,9 @@ running_time = 7.8E06
 
 modelNames = None
 if len(sys.argv) > 1:
-    modelNames = sys.argv[1].split(',')
+    modelNames=[]
+    for a in sys.argv[1:]:
+        modelNames = modelNames+ a.split(',')
 model = configure(modelNames)
 
 # The very important list of years
@@ -120,12 +122,42 @@ for i in YEARS:
 # Analysis!  Following something like the 2018 resource request, we make this
 # 75% of everything else (for a moment).
 
-analysis_cpu_required = {i : 0.75 *
-                             (lhc_mc_cpu_required[i] + hllhc_mc_cpu_required[i] +
-                             data_cpu_required[i] + rereco_cpu_required[i])
-                             for i in YEARS}
+# new json driven model
+# conconstant time to read - just driven by analysis sets
 
-analysis_cpu_time = {i : 0.75* (data_cpu_time[i] + rereco_cpu_time[i] +
+if 'AnalysisSet' in model:
+    print("Using new analysis method")
+    
+    analysis_cpu_time={}
+    for i in YEARS:
+        analysis_cpu_time[i]=0.
+        for j in model['AnalysisSet'][str(i)]:
+            # 2.25 is 1 for prompt + 1.25 of rereco
+            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearData']*2.25*data_events[j]
+            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*lhc_mc_events[j]
+        if i > 2025:
+            for j in model['AnalysisSet'][str(i)]:
+                analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*hllhc_mc_events[j]
+        else:
+            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*hllhc_mc_events[i]
+
+    print(analysis_cpu_time)
+
+    analysis_cpu_required={}
+    for i in YEARS:
+        analysis_cpu_required[i] = analysis_cpu_time[i]/seconds_per_year
+
+    print(analysis_cpu_required)
+
+else:
+    print("Using old analysis method")
+
+    analysis_cpu_required = {i : 0.75 *
+                             (lhc_mc_cpu_required[i] + hllhc_mc_cpu_required[i] +
+                              data_cpu_required[i] + rereco_cpu_required[i])
+                             for i in YEARS}
+    
+    analysis_cpu_time = {i : 0.75* (data_cpu_time[i] + rereco_cpu_time[i] +
                          lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i])
                          for i in YEARS}
 
@@ -141,20 +173,20 @@ analysis_cpu_time = {i : 0.75* (data_cpu_time[i] + rereco_cpu_time[i] +
 # OK, the analysis is I/O bound anyway and doesn't benefit from such
 # improvements.
 
-analysis_cpu_time[2019] = (4/3) * analysis_cpu_time[2018]
-analysis_cpu_time[2020] = analysis_cpu_time[2019]
-analysis_cpu_time[2021] = analysis_cpu_time[2019]
-analysis_cpu_time[2022] = (5/4)* analysis_cpu_time[2021]
-analysis_cpu_time[2023] = (6/5)* analysis_cpu_time[2022]
-analysis_cpu_time[2024] = (7/6)* analysis_cpu_time[2023]
-
+    analysis_cpu_time[2019] = (4/3) * analysis_cpu_time[2018]
+    analysis_cpu_time[2020] = analysis_cpu_time[2019]
+    analysis_cpu_time[2021] = analysis_cpu_time[2019]
+    analysis_cpu_time[2022] = (5/4)* analysis_cpu_time[2021]
+    analysis_cpu_time[2023] = (6/5)* analysis_cpu_time[2022]
+    analysis_cpu_time[2024] = (7/6)* analysis_cpu_time[2023]
+    
 # More kludging: assume analysis takes place all year to calculate the HS06
 # required for the above analysis CPU time.  Eric will hate this, I do too,
 # we should fix it up later.
 
-for i in YEARS:
-    if (i >= 2019 and i < 2025):
-        analysis_cpu_required[i] = analysis_cpu_time[i]/seconds_per_year
+    for i in YEARS:
+        if (i >= 2019 and i < 2025):
+            analysis_cpu_required[i] = analysis_cpu_time[i]/seconds_per_year
 
 # Shutdown year model:
 
@@ -324,6 +356,13 @@ for year, item in sorted(cpuCapacity.items()):
 
 # Build a data frame from lists:
 
+pngKeyName=''
+if modelNames is not None:
+    for m in modelNames:
+        pngKeyName=pngKeyName+'_'+m.split('/')[-1].split('.')[0]
+
+
+
 cpuFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
                              'Prompt Data' : cpuDataList,
                              'Non-Prompt Data' : cpuRerecoList,
@@ -339,7 +378,7 @@ ax.set(ylabel='MHS06')
 ax.set(title='CPU by Type')
 
 fig = ax.get_figure()
-fig.savefig('CPU by Type.png')
+fig.savefig('CPUByType_'+pngKeyName+'.png') 
 
 cpuCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
                              'Prompt Data' : cpuDataList,
@@ -360,7 +399,7 @@ ax.set(ylabel='MHS06')
 ax.set(title='CPU by Type and Capacity')
 
 fig = ax.get_figure()
-fig.savefig('CPU by Type and Capacity.png')
+fig.savefig('CPUByTypeAndCapacity'+pngKeyName+'.png')
 
 # Do the same thing for the HS06 * d
 
@@ -404,7 +443,7 @@ ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type')
 
 fig = ax.get_figure()
-fig.savefig('CPU seconds by Type.png')
+fig.savefig('CPUSecondsByType'+pngKeyName+'.png')
 
 
 cpuTimeCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
@@ -425,6 +464,6 @@ ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type and Capacity')
 
 fig = ax.get_figure()
-fig.savefig('CPU seconds by Type and Capacity.png')
+fig.savefig('CPUSecondsByTypeAndCapacity'+pngKeyName+'.png')
 
 

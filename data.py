@@ -22,7 +22,9 @@ PETA = 1e15
 
 modelNames = None
 if len(sys.argv) > 1:
-    modelNames = sys.argv[1].split(',')
+    modelNames=[]
+    for a in sys.argv[1:]:
+        modelNames = modelNames+ a.split(',')
 model = configure(modelNames)
 
 YEARS = list(range(model['start_year'], model['end_year'] + 1))
@@ -88,6 +90,7 @@ for tier in TIERS:
                         zip(model['storage_model']['versions'][tier], model['storage_model']['disk_replicas'][tier])]
     # Assume we have the highest number of versions in year 1, save n replicas of that
     tapeCopies[tier] = model['storage_model']['versions'][tier][0] * model['storage_model']['tape_replicas'][tier]
+    print(tier,tapeCopies[tier])
     if not tapeCopies[tier]: tapeCopies[tier] = [0, 0, 0]
 
 # Loop over years to determine how much is produced without versions or replicas
@@ -154,7 +157,8 @@ for year in YEARS:
                         dataOnTape[year][dataType][tier] += size * revOnTape
                         tapeSamples[year].append([producedYear, dataType, tier, size * revOnTape, revOnTape])
                         tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape / PETA
-
+                    if tier == "MINIAOD":
+                        print(year,producedYear,tier,diskCopiesByDelta,revOnDisk)
     # Add capacity numbers
     diskByYear[YEARS.index(year)][YearColumns.index('Capacity')] = diskCapacity[str(year)] / PETA
     diskByYear[YEARS.index(year)][YearColumns.index('Year')] = str(year)
@@ -190,15 +194,20 @@ diskByYear[YEARS.index(2018)][YearColumns.index('Run1 & 2')] = 10
 diskByYear[YEARS.index(2019)][YearColumns.index('Run1 & 2')] = 5
 diskByYear[YEARS.index(2020)][YearColumns.index('Run1 & 2')] = 0
 
-plotStorage(producedByTier, name='Produced by Tier.png', title='Data produced by tier', columns=TIERS, index=YEARS)
+keyName=''
+if modelNames is not None:
+    for m in modelNames:
+        keyName=keyName+'_'+m.split('/')[-1].split('.')[0]
 
-plotStorageWithCapacity(tapeByTier, name='Tape by Tier.png', title='Data on tape by tier', columns=TierColumns,
+plotStorage(producedByTier, name='ProducedbyTier'+keyName+'.png', title='Data produced by tier', columns=TIERS, index=YEARS)
+
+plotStorageWithCapacity(tapeByTier, name='TapebyTier'+keyName+'.png', title='Data on tape by tier', columns=TierColumns,
                         bars=TIERS + STATIC_TIERS)
-plotStorageWithCapacity(diskByTier, name='Disk by Tier.png', title='Data on disk by tier', columns=TierColumns,
+plotStorageWithCapacity(diskByTier, name='DiskbyTier'+keyName+'.png', title='Data on disk by tier', columns=TierColumns,
                         bars=TIERS + STATIC_TIERS)
-plotStorageWithCapacity(tapeByYear, name='Tape by Year.png', title='Data on tape by year produced', columns=YearColumns,
+plotStorageWithCapacity(tapeByYear, name='TapebyYear'+keyName+'.png', title='Data on tape by year produced', columns=YearColumns,
                         bars=YEARS + ['Run1 & 2'])
-plotStorageWithCapacity(diskByYear, name='Disk by Year.png', title='Data on disk by year produced', columns=YearColumns,
+plotStorageWithCapacity(diskByYear, name='DiskbyYear'+keyName+'.png', title='Data on disk by year produced', columns=YearColumns,
                         bars=YEARS + ['Run1 & 2'])
 
 # Dump out tuples of all the data on tape and disk in a given year
@@ -259,9 +268,9 @@ current year: 2 versions, one on disk, one on tape
 next year: 1 version, fraction on disk, one version on tape
 next-to-next year: 0 version
 
-MICROAOD:
-current year: 10 different versions (combination of multiple different MICROAODs and different versions), several replicas on disk, one on tape
-next year: only the distinct set of different MICROAOD, no different version, several replicas on disk (less than current year), on distinct set on tape
+NANOAOD:
+current year: 10 different versions (combination of multiple different NANOAODs and different versions), several replicas on disk, one on tape
+next year: only the distinct set of different NANOAOD, no different version, several replicas on disk (less than current year), on distinct set on tape
 next-to-next year: same as next year, but only one disk replica
 next year:
 '''
