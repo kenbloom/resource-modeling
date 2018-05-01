@@ -102,3 +102,9 @@ ENV/
 
 # png files
 *.png
+
+# pdf files
+*.pdf
+
+# samples json files
+*samples.json
