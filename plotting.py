@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 import pandas as pd
 
 # Make sort order that includes tiers from unrefined to refined and both string and integer years
-SORT_ORDER = ['Run1 & 2', 'Ops space', 'RAW', 'GENSIM', 'AOD', 'MINIAOD', 'MICROAOD', 'USER'] + \
+SORT_ORDER = ['Run1 & 2', 'Ops space', 'RAW', 'GENSIM', 'AOD', 'MINIAOD', 'NANOAOD', 'USER'] + \
              [str(year) for year in range(2006, 2050)] + list(range(2006, 2050))
 COLOR_MAP = 'Paired'
 
