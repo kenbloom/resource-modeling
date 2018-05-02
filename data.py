@@ -103,7 +103,7 @@ for year in YEARS:
             mcEvents = mc_event_model(model, year)
             for kind, events in mcEvents.items():
                 dummyCPU, tierSize = performance_by_year(model, year, tier, data_type='mc', kind=kind)
-                dataProduced[year]['mc'][tier] += tierSize * events
+                dataProduced[year]['mc'][tier] += tierSize * events 
 
 producedByTier = [[0 for _i in range(len(TIERS))] for _j in YEARS]
 for year, dataDict in dataProduced.items():
@@ -117,6 +117,9 @@ YearColumns = YEARS + ['Capacity', 'Year', 'Run1 & 2']  # Add capacity, years as
 # Initialize a matrix with years and years
 diskByYear = [[0 for _i in YearColumns] for _j in YEARS]
 tapeByYear = [[0 for _i in YearColumns] for _j in YEARS]
+
+disk_fill_factor = model['disk_fill_factor'] 
+tape_fill_factor = model['tape_fill_factor']
 
 # Loop over years to determine how much is saved
 for year in YEARS:
@@ -150,15 +153,13 @@ for year in YEARS:
                         revOnDisk = diskCopiesByDelta[year - producedYear]
                         revOnTape = tapeCopiesByDelta[year - producedYear]
                     if size and revOnDisk:
-                        dataOnDisk[year][dataType][tier] += size * revOnDisk
-                        diskSamples[year].append([producedYear, dataType, tier, size * revOnDisk, revOnDisk])
-                        diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnDisk / PETA
+                        dataOnDisk[year][dataType][tier] += size * revOnDisk / disk_fill_factor
+                        diskSamples[year].append([producedYear, dataType, tier, size * revOnDisk / disk_fill_factor, revOnDisk])
+                        diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnDisk / disk_fill_factor / PETA
                     if size and revOnTape:
                         dataOnTape[year][dataType][tier] += size * revOnTape
-                        tapeSamples[year].append([producedYear, dataType, tier, size * revOnTape, revOnTape])
-                        tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape / PETA
-                    if tier == "MINIAOD":
-                        print(year,producedYear,tier,diskCopiesByDelta,revOnDisk)
+                        tapeSamples[year].append([producedYear, dataType, tier, size * revOnTape / tape_fill_factor, revOnTape])
+                        tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape / tape_fill_factor / PETA
     # Add capacity numbers
     diskByYear[YEARS.index(year)][YearColumns.index('Capacity')] = diskCapacity[str(year)] / PETA
     diskByYear[YEARS.index(year)][YearColumns.index('Year')] = str(year)

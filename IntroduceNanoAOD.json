@@ -128,5 +128,7 @@
    "2021": 6000.0, 
    "2026": 10000.0
   }
- }
+ },
+ "AnalysisReadsPerYearData" : 40,
+ "AnalysisReadsPerYearMC" : 20
 }

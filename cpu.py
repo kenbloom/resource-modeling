@@ -56,6 +56,11 @@ hllhc_sim_time = {year: performance_by_year(model, year, 'GENSIM',
                         performance_by_year(model, year, 'RECO',
                                             data_type='mc', kind='2026')[0] for year in YEARS}
 
+print("Year / Reco / LHC SIM / HLLHC SIM times")
+for year in YEARS:
+    print(year,int(reco_time[year]),int(lhc_sim_time[year]),int(hllhc_sim_time[year]))
+print()
+
 # general pattern:
 # _required: HS06
 # _time: HS06s
@@ -64,13 +69,15 @@ hllhc_sim_time = {year: performance_by_year(model, year, 'GENSIM',
 # Take the running time and event rate from the model
 
 data_events = {i: run_model(model, i, data_type='data').events for i in YEARS}
-lhc_mc_events = {i: mc_event_model(model, i)['2017'] for i in YEARS}
-hllhc_mc_events = {i: mc_event_model(model, i)['2026'] for i in YEARS}
+lhc_mc_events = {i: mc_event_model(model, i)['2017']  for i in YEARS}
+hllhc_mc_events = {i: mc_event_model(model, i)['2026']  for i in YEARS}
+
+cpu_efficiency = model['cpu_efficiency']
 
 #Note the quantity below is for prompt reco only.
-data_cpu_time = {i : data_events[i] * reco_time[i] for i in YEARS}
-lhc_mc_cpu_time = {i : lhc_mc_events[i] * lhc_sim_time[i] for i in YEARS}
-hllhc_mc_cpu_time = {i : hllhc_mc_events[i] * hllhc_sim_time[i] for i in YEARS}
+data_cpu_time = {i : data_events[i] * reco_time[i] / cpu_efficiency for i in YEARS}
+lhc_mc_cpu_time = {i : lhc_mc_events[i] * lhc_sim_time[i] / cpu_efficiency for i in YEARS}
+hllhc_mc_cpu_time = {i : hllhc_mc_events[i] * hllhc_sim_time[i] / cpu_efficiency for i in YEARS}
 
 # The data need to be reconstructed about as quickly as we record them.  In
 # addition, we need to factor in express, repacking, AlCa, CAF
@@ -93,8 +100,8 @@ data_cpu_time = {i : 1.5 * data_cpu_time[i] for i in YEARS}
 # the previous year's data (assumed to be the same number of events as this
 # year) but we want to do that in three months.
 
-rereco_cpu_required = {i : max(0.25 * data_events[i] * reco_time[i]/ seconds_per_month,
-                                data_events[i] * reco_time[i] / (3 * seconds_per_month))
+rereco_cpu_required = {i : (1.0/ cpu_efficiency)*max(0.25 * data_events[i] * reco_time[i]/ seconds_per_month,
+                                                     data_events[i] * reco_time[i] / (3 * seconds_per_month))
                          for i in YEARS}
 
 # But the total time needed is the sum of both activities.
@@ -140,14 +147,11 @@ if 'AnalysisSet' in model:
                 analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*hllhc_mc_events[j]
         else:
             analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*hllhc_mc_events[i]
-
-    print(analysis_cpu_time)
+        analysis_cpu_time[i] = analysis_cpu_time[i]  / cpu_efficiency
 
     analysis_cpu_required={}
     for i in YEARS:
         analysis_cpu_required[i] = analysis_cpu_time[i]/seconds_per_year
-
-    print(analysis_cpu_required)
 
 else:
     print("Using old analysis method")
@@ -200,15 +204,15 @@ for i in YEARS:
     shutdown_last_year, dummy = in_shutdown(model,i-1)
     if (shutdown_this_year and not(shutdown_last_year)):
         data_events[i] = 3 * data_events[i-1]
-        rereco_cpu_time[i] = data_events[i] * reco_time[i]
+        rereco_cpu_time[i] = data_events[i] * reco_time[i] / cpu_efficiency
         rereco_cpu_required[i] = rereco_cpu_time[i] / seconds_per_year
         if i < 2025:
             lhc_mc_events[i] = 3 * lhc_mc_events[i-1]
-            lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i]
+            lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i] / cpu_efficiency
             lhc_mc_cpu_required[i] = lhc_mc_cpu_time[i] / seconds_per_year
         else:
             hllhc_mc_events[i] = 3 * hllhc_mc_events[i-1]
-            hllhc_mc_cpu_time[i] = hllhc_mc_events[i] * hllhc_sim_time[i]
+            hllhc_mc_cpu_time[i] = hllhc_mc_events[i] * hllhc_sim_time[i] / cpu_efficiency
             hllhc_mc_cpu_required[i] = hllhc_mc_cpu_time[i] / seconds_per_year
 
 # Sum up everything
@@ -293,7 +297,7 @@ for year in YEARS:
 
         cpuRetired = cpuAdded.get(str(int(year) - model['capacity_model']['cpu_lifetime']), 0)
         cpuCapacity[str(year)] = cpuCapacity[str(int(year) - 1)] + cpuAdded[str(year)] - cpuRetired
-        cpuTimeCapacity[str(year)] = cpuCapacity[str(year)] * seconds_per_year
+        cpuTimeCapacity[str(year)] = cpuCapacity[str(year)] * seconds_per_year 
 
 print("CPU requirements in HS06")
 print("Year Prompt NonPrompt LHCMC HLLHCMC Ana Total Cap1 Cap2 Ratio USCMS HPC")
