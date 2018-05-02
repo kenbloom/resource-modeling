@@ -199,21 +199,61 @@ else:
 # ancillary stuff.  We need to do the MC also...assume similarly that we
 # have three times as many events as we had the previous year.
 
+date_rereco_two_years=model['first_year_to_spread_rereco_over_two_years']
 for i in YEARS:
     shutdown_this_year, dummy = in_shutdown(model,i)
     shutdown_last_year, dummy = in_shutdown(model,i-1)
+    shutdown_next_year, dummy = in_shutdown(model,i+1)
     if (shutdown_this_year and not(shutdown_last_year)):
         data_events[i] = 3 * data_events[i-1]
+        if i >=date_rereco_two_years:
+            data_events[i]=0.5*data_events[i]
         rereco_cpu_time[i] = data_events[i] * reco_time[i] / cpu_efficiency
         rereco_cpu_required[i] = rereco_cpu_time[i] / seconds_per_year
+
+        if i >=date_rereco_two_years:
+            if i+1 in data_events:
+                if shutdown_next_year:
+                    data_events[i+1]=0
+                    rereco_cpu_time[i+1]=0
+                    rereco_cpu_required[i+1]=0
+                data_events[i+1]+=data_events[i]
+                rereco_cpu_time[i+1] += rereco_cpu_time[i]
+                rereco_cpu_required[i+1] += rereco_cpu_required[i]
+
         if i < 2025:
             lhc_mc_events[i] = 3 * lhc_mc_events[i-1]
+            if i >=date_rereco_two_years:
+                lhc_mc_events[i]= 0.5*lhc_mc_events[i]
             lhc_mc_cpu_time[i] = lhc_mc_events[i] * lhc_sim_time[i] / cpu_efficiency
             lhc_mc_cpu_required[i] = lhc_mc_cpu_time[i] / seconds_per_year
+            if i >=date_rereco_two_years:
+                if i+1 in lhc_mc_events:
+                    if shutdown_next_year:
+                        lhc_mc_events[i+1]=0
+                        lhc_mc_cpu_time[i+1]=0
+                        lhc_mc_cpu_required[i+1]=0
+                    lhc_mc_events[i+1] += lhc_mc_events[i]
+                    lhc_mc_cpu_time[i+1] += lhc_mc_cpu_time[i]
+                    lhc_mc_cpu_required[i] += lhc_mc_cpu_required[i]
+                    
+
         else:
             hllhc_mc_events[i] = 3 * hllhc_mc_events[i-1]
+            if i >=date_rereco_two_years:
+                hllhc_mc_events[i]=0.5*hllhc_mc_events[i]
+
             hllhc_mc_cpu_time[i] = hllhc_mc_events[i] * hllhc_sim_time[i] / cpu_efficiency
             hllhc_mc_cpu_required[i] = hllhc_mc_cpu_time[i] / seconds_per_year
+            if i >=date_rereco_two_years:
+                if i+1 in hllhc_mc_events:
+                    if shutdown_next_year:
+                        hllhc_mc_events[i+1]=0
+                        hllhc_mc_cpu_time[i+1]=0
+                        hllhc_mc_cpu_required[i+1]=0
+                    hllhc_mc_events[i+1] += hllhc_mc_events[i]
+                    hllhc_mc_cpu_time[i+1] += hllhc_mc_cpu_time[i]
+                    hllhc_mc_cpu_required[i+1] += hllhc_mc_cpu_required[i]
 
 # Sum up everything
 
@@ -250,12 +290,12 @@ hpc_cpu_time = {i: rereco_cpu_time[i] +
 cpu_improvement_factor = model['improvement_factors']['hardware']
 cpu_improvement = {i : cpu_improvement_factor ** (i-2017) for i in YEARS}
 
-cpu_capacity = {2016 : 1.4 * mega}
+cpu_capacity = {2015 : 1.4 * mega}
 
 # This variable assumes that you can have the cpu_capacity for an entire
 # year and thus calculates the HS06 * s available (in principle).
 
-cpu_time_capacity = {2016 : 1.4 * mega}
+cpu_time_capacity = {2015 : 1.4 * mega}
 
 retirement_rate = 0.05
 
@@ -263,8 +303,8 @@ for i in YEARS:
     cpu_capacity[i] = cpu_capacity[i-1] * (1 - retirement_rate) + (300 if i < 2020 else 600) * kilo * cpu_improvement[i]
     cpu_time_capacity[i] = cpu_capacity[i] * seconds_per_year
 
-del cpu_capacity[2016]
-del cpu_time_capacity[2016]
+del cpu_capacity[2015]
+del cpu_time_capacity[2015]
 
 # CPU capacity model ala data.py
 
