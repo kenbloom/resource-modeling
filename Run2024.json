@@ -4,8 +4,8 @@
  		    "CPUByTypeAndCapacity": 7.0,
 		    "CPUSecondsByType": 100.0,
 		    "CPUSecondsByTypeAndCapacity": 100.0,
-		    "DiskbyTier": 300.0,
-		    "DiskbyYear": 300.0,
+		    "DiskbyTier": 250.0,
+		    "DiskbyYear": 250.0,
 		    "ProducedbyTier": 60.0,
 		    "TapebyTier": 400.0,
 		    "TapebyYear": 400.0
