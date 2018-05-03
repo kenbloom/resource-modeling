@@ -389,8 +389,9 @@ for i in YEARS:
 print("Fraction of CPU required for T1/T2 activities")
 print("Year\t Prmpt\t Rreco\tGen\tSim\tSimReco\t Anal\t USCPU")
 
-genFractionOfSim=0.05
+genFractionOfTotal=0.03
 us_fraction=model['us_fraction_T1T2']
+
 
 for i in YEARS:
     #first some calculations we didn't do before
@@ -403,19 +404,17 @@ for i in YEARS:
 
     lhcDigiFraction=lhcDigi/(lhcSim+lhcDigi+lhcReco)
     lhcRecoFraction=lhcReco/(lhcSim+lhcDigi+lhcReco)
-    lhcGenFraction=genFractionOfSim*lhcSim/(lhcSim+lhcDigi+lhcReco)
-    lhcSimFraction=(1.0-genFractionOfSim)*lhcSim/(lhcSim+lhcDigi+lhcReco)
+    lhcSimFraction=lhcSim/(lhcSim+lhcDigi+lhcReco)
 
     hllhcDigiFraction=hllhcDigi/(hllhcSim+hllhcDigi+hllhcReco)
     hllhcRecoFraction=hllhcReco/(hllhcSim+hllhcDigi+hllhcReco)
-    hllhcGenFraction=genFractionOfSim*hllhcSim/(hllhcSim+hllhcDigi+hllhcReco)
-    hllhcSimFraction=(1.0-genFractionOfSim)*hllhcSim/(hllhcSim+hllhcDigi+hllhcReco)
+    hllhcSimFraction=hllhcSim/(hllhcSim+hllhcDigi+hllhcReco)
 
     lhcFraction= lhc_mc_cpu_time[i] / (lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i])
 
-    totalT1T2 = total_cpu_time[i] - data_cpu_time[i]
+    totalT1T2 = (total_cpu_time[i] - data_cpu_time[i])*(1.0+genFractionOfTotal)
     
-    totGenFraction = (lhcGenFraction*lhcFraction + hllhcGenFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
+    totGenFraction = genFractionOfTotal
     totSimFraction = (lhcSimFraction*lhcFraction + hllhcSimFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
     totDigiFraction = (lhcDigiFraction*lhcFraction + hllhcDigiFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
     totRecoFraction = (lhcRecoFraction*lhcFraction + hllhcRecoFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
@@ -492,7 +491,7 @@ labels=labels[::-1]
 ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
 ax.set_ylim(ymax=plotMaxs['CPUByType'])
 minYearVal=max(0,model['minYearToPlot']-YEARS[0])-0.5 #pandas...
-ax.set_xlim(ymax=minYearVal)
+ax.set_xlim(xmin=minYearVal)
 fig = ax.get_figure()
 fig.tight_layout()
 fig.savefig('CPUByType'+pngKeyName+'.png') 
@@ -515,7 +514,7 @@ cpuCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC',
 ax.set(ylabel='MHS06')
 ax.set(title='CPU by Type and Capacity')
 ax.set_ylim(ymax=plotMaxs['CPUByTypeAndCapacity'])
-ax.set_xlim(ymax=minYearVal)
+ax.set_xlim(xmin=minYearVal)
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
 labels=labels[::-1]
@@ -568,7 +567,7 @@ ax = cpuTimeFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC M
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type')
 ax.set_ylim(ymax=plotMaxs['CPUSecondsByType'])
-ax.set_xlim(ymax=minYearVal)
+ax.set_xlim(xmin=minYearVal)
 
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
@@ -597,7 +596,7 @@ cpuTimeCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LH
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type and Capacity')
 ax.set_ylim(ymax=plotMaxs['CPUSecondsByTypeAndCapacity'])
-ax.set_xlim(ymax=minYearVal)
+ax.set_xlim(xmin=minYearVal)
 
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]

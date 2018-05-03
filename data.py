@@ -131,6 +131,8 @@ disk_fill_factor = (1.0 / model['disk_fill_factor']) * ( model['tier1_disk_fract
 tape_fill_factor = 1.0/ model['tape_fill_factor']
 
 # Loop over years to determine how much is saved
+copies_on_disk={}
+tiers_on_disk={}
 for year in YEARS:
     # Add static (or nearly) data
     for tier, spaces in model['static_disk'].items():
@@ -157,6 +159,10 @@ for year in YEARS:
                 diskCopiesByDelta = diskCopies[tier]
                 tapeCopiesByDelta = tapeCopies[tier]
                 if int(producedYear) <= int(year):  # Can't save data for future years
+                    if int(producedYear) == int(year):
+                        if tier != "USER" and tier!="GENSIM" and tier!="RAW":
+                            tiers_on_disk[year]=tiers_on_disk.get(year,0)+1
+                            copies_on_disk[year]=copies_on_disk.get(year,0)+diskCopiesByDelta[0]*scaleDisk
                     if year - producedYear >= len(diskCopiesByDelta):
                         revOnDisk = diskCopiesByDelta[-1]  # Revisions = versions * copies
                     elif in_shutdown(model, year):
@@ -296,16 +302,20 @@ us_fraction=model['us_fraction_T1T2']
 tape_fraction_T0=model['tape_fraction_T0']
 disk_fraction_T0=model['disk_fraction_T0']
 
-print("Year","\t"," US Disk","\t"," US Tape")
+print("Year","\t"," US Disk","\t"," US Tape\tCopies")
 for year in YEARS:
     totalDisk=0
     totalTape=0
+    nCopies=copies_on_disk[year]/float(tiers_on_disk[year])
     for column in TIERS + STATIC_TIERS:
         totalDisk += diskByTier[YEARS.index(year)][TierColumns.index(column)]
         totalTape += tapeByTier[YEARS.index(year)][TierColumns.index(column)]
 
     print(year,'\t','{:8.2f}'.format(totalDisk*us_fraction*(1.0-disk_fraction_T0)),'\t',
-               '{:8.2f}'.format(totalTape*us_fraction*(1.0-tape_fraction_T0)),
+               '{:8.2f}'.format(totalTape*us_fraction*(1.0-tape_fraction_T0)),'\t',
+          '{:4.2f}'.format(nCopies),'\t',
+          '{:4.2f}'.format(us_fraction*nCopies)
+
           )
 
 
