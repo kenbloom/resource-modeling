@@ -19,7 +19,7 @@ colors=[ cmap(i) for i in range(0,10)]
 COLOR_MAP = 'Paired'
 
 
-def plotStorageWithCapacity(data, name, title='', columns=None, bars=None,maximum=None):
+def plotStorageWithCapacity(data, name, title='', columns=None, bars=None,maximum=None,minYear=None):
     bars = sorted(bars, key=SORT_ORDER.index)
     frame = pd.DataFrame(data, columns=columns)
     # ax = frame[['Capacity', 'Year']].plot(x='Year', linestyle='-', marker='o', color='Black')
@@ -33,18 +33,20 @@ def plotStorageWithCapacity(data, name, title='', columns=None, bars=None,maximu
 
     ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
     ax.set_ylim(ymax=maximum)
+    ax.set_xlim(xmin=minYear)
 
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
     fig = ax.get_figure()
+    fig.tight_layout()
     fig.savefig(name)
 
 
-def plotStorage(data, name, title='', columns=None, index=None, maximum=None):
+def plotStorage(data, name, title='', columns=None, index=None, maximum=None, minYear=None):
     # Make the plot of produced data per year (input to other plots)
     plot_order = sorted(columns, key=SORT_ORDER.index)
     order_inds = [ SORT_ORDER.index(p) for p in plot_order]
-
+    print("min Year",minYear)
     frame = pd.DataFrame(data, columns=columns, index=index)
 #    ax = frame[plot_order].plot(kind='bar', stacked=True, colormap=COLOR_MAP)
     ax = frame[plot_order].plot(kind='bar', stacked=True, color=[colors[i] for i in order_inds])
@@ -56,6 +58,8 @@ def plotStorage(data, name, title='', columns=None, index=None, maximum=None):
 
     ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
     ax.set_ylim(ymax=maximum)
+    ax.set_xlim(xmin=minYear)
+
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
 
@@ -65,7 +69,7 @@ def plotStorage(data, name, title='', columns=None, index=None, maximum=None):
     fig.savefig(name)
 
 
-def plotEvents(data, name, title='', columns=None, index=None, maximum=None):
+def plotEvents(data, name, title='', columns=None, index=None, maximum=None,minYear=None):
     # Make the plot of produced events per year by type (input to other plots)
     plot_order = sorted(columns)
     order_inds = [ SORT_ORDER.index(p) for p in plot_order]
@@ -73,6 +77,8 @@ def plotEvents(data, name, title='', columns=None, index=None, maximum=None):
     ax = frame[plot_order].plot(kind='bar', stacked=True, colormap=COLOR_MAP)
     ax.set(ylabel='Billions of events', title=title)
     ax.set_ylim(ymax=maximum)
+    ax.set_xlim(xmin=minYear)
+
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
     fig = ax.get_figure()
