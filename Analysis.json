@@ -1,6 +1,7 @@
 {
-"AnalysisReadsPerYearData" : 80,
-"AnalysisReadsPerYearMC" : 40,
+"AnalysisCPUScaledByReco" : 0.1,
+"AnalysisReadsPerYearData" : { "2016": 80, "2050" : 80},
+"AnalysisReadsPerYearMC" : { "2016": 40, "2050" : 40},
 "AnalysisCPUPerEvent" : 2,
 "AnalysisSet" : {
 	          "2016" : [],

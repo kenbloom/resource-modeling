@@ -34,6 +34,7 @@ def configure(modelName):
 
     model = {}
     for modelName in modelNames:
+        print(modelName)
         with open(modelName, 'r') as modelFile:
             modelChanges = json.load(modelFile)
             updateDict(model,modelChanges)

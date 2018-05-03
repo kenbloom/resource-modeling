@@ -19,7 +19,7 @@ colors=[ cmap(i) for i in range(0,10)]
 COLOR_MAP = 'Paired'
 
 
-def plotStorageWithCapacity(data, name, title='', columns=None, bars=None):
+def plotStorageWithCapacity(data, name, title='', columns=None, bars=None,maximum=None):
     bars = sorted(bars, key=SORT_ORDER.index)
     frame = pd.DataFrame(data, columns=columns)
     # ax = frame[['Capacity', 'Year']].plot(x='Year', linestyle='-', marker='o', color='Black')
@@ -32,13 +32,15 @@ def plotStorageWithCapacity(data, name, title='', columns=None, bars=None):
     labels=labels[::-1]
 
     ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
+    ax.set_ylim(ymax=maximum)
+
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
     fig = ax.get_figure()
     fig.savefig(name)
 
 
-def plotStorage(data, name, title='', columns=None, index=None):
+def plotStorage(data, name, title='', columns=None, index=None, maximum=None):
     # Make the plot of produced data per year (input to other plots)
     plot_order = sorted(columns, key=SORT_ORDER.index)
     order_inds = [ SORT_ORDER.index(p) for p in plot_order]
@@ -53,21 +55,24 @@ def plotStorage(data, name, title='', columns=None, index=None):
     labels=labels[::-1]
 
     ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
+    ax.set_ylim(ymax=maximum)
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
+
     fig = ax.get_figure()
     fig.tight_layout()
 
     fig.savefig(name)
 
 
-def plotEvents(data, name, title='', columns=None, index=None):
+def plotEvents(data, name, title='', columns=None, index=None, maximum=None):
     # Make the plot of produced events per year by type (input to other plots)
     plot_order = sorted(columns)
     order_inds = [ SORT_ORDER.index(p) for p in plot_order]
     frame = pd.DataFrame(data, columns=columns, index=index)
     ax = frame[plot_order].plot(kind='bar', stacked=True, colormap=COLOR_MAP)
     ax.set(ylabel='Billions of events', title=title)
+    ax.set_ylim(ymax=maximum)
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
     fig = ax.get_figure()

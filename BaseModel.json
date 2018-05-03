@@ -30,5 +30,15 @@
   "2016": 1000.0, 
   "2021": 1000.0, 
   "2026": 10000.0
- }
+ },
+ "plotMaximums" : { "CPUByType" : 120.0,
+ 		    "CPUByTypeAndCapacity": 120.0,
+		    "CPUSecondsByType": 1600.0,
+		    "CPUSecondsByTypeAndCapacity": 1600.0,
+		    "DiskbyTier": 6000.0,
+		    "DiskbyYear": 6000.0,
+		    "ProducedbyTier": 1200.0,
+		    "TapebyTier": 7000.0,
+		    "TapebyYear": 7000.0
+ 		    }
 }

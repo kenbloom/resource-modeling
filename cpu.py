@@ -18,6 +18,7 @@ import pandas as pd
 import json
 from configure import configure, run_model, mc_event_model, in_shutdown
 from performance import performance_by_year
+from utils import time_dependent_value
 
 # Basic parameters
 kilo = 1000
@@ -134,22 +135,33 @@ for i in YEARS:
 
 if 'AnalysisSet' in model:
     print("Using new analysis method")
+
     
     analysis_cpu_time={}
     for i in YEARS:
+        dataReads,ty = time_dependent_value(year=i,values=model['AnalysisReadsPerYearData'])
+        mcReads,ty = time_dependent_value(year=i,values=model['AnalysisReadsPerYearMC'])
         analysis_cpu_time[i]=0.
         for j in model['AnalysisSet'][str(i)]:
             # 2.25 is 1 for prompt + 1.25 of rereco
-            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearData']*2.25*data_events[j]
-            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*lhc_mc_events[j]
+            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * dataReads*2.25*data_events[j]
+            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * mcReads*lhc_mc_events[j]
         if i > 2025:
             for j in model['AnalysisSet'][str(i)]:
-                analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*hllhc_mc_events[j]
+                analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * mcReads*hllhc_mc_events[j]
         else:
-            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * model['AnalysisReadsPerYearMC']*hllhc_mc_events[i]
+            analysis_cpu_time[i] += model['AnalysisCPUPerEvent'] * mcReads*hllhc_mc_events[i]
         analysis_cpu_time[i] = analysis_cpu_time[i]  / cpu_efficiency
 
     analysis_cpu_required={}
+
+    # allow a component that scales with reconstruction
+    analysisScaledByReco = model['AnalysisCPUScaledByReco']
+    if analysisScaledByReco > 0:
+        for i in YEARS:
+            analysis_cpu_time[i] += analysisScaledByReco * (lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i] + 
+                                                            data_cpu_time[i] +  rereco_cpu_time[i])
+    #now sum up everything
     for i in YEARS:
         analysis_cpu_required[i] = analysis_cpu_time[i]/seconds_per_year
 
@@ -372,6 +384,51 @@ for i in YEARS:
               )
 
 
+print("Fraction of CPU required for T1/T2 activities")
+print("Year Prompt Rereco    Gen    Sim SimReco Analysis")
+
+genFractionOfSim=0.05
+
+for i in YEARS:
+    #first some calculations we didn't do before
+    lhcSim=performance_by_year(model, year, 'GENSIM', data_type='mc', kind='2017')[0]
+    lhcDigi=performance_by_year(model, year, 'DIGI', data_type='mc', kind='2017')[0]
+    lhcReco=performance_by_year(model, year, 'RECO', data_type='mc', kind='2017')[0]
+    hllhcSim=performance_by_year(model, year, 'GENSIM', data_type='mc', kind='2026')[0]
+    hllhcDigi=performance_by_year(model, year, 'DIGI', data_type='mc', kind='2026')[0]
+    hllhcReco=performance_by_year(model, year, 'RECO', data_type='mc', kind='2026')[0]
+
+    lhcDigiFraction=lhcDigi/(lhcSim+lhcDigi+lhcReco)
+    lhcRecoFraction=lhcReco/(lhcSim+lhcDigi+lhcReco)
+    lhcGenFraction=genFractionOfSim*lhcSim/(lhcSim+lhcDigi+lhcReco)
+    lhcSimFraction=(1.0-genFractionOfSim)*lhcSim/(lhcSim+lhcDigi+lhcReco)
+
+    hllhcDigiFraction=hllhcDigi/(hllhcSim+hllhcDigi+hllhcReco)
+    hllhcRecoFraction=hllhcReco/(hllhcSim+hllhcDigi+hllhcReco)
+    hllhcGenFraction=genFractionOfSim*hllhcSim/(hllhcSim+hllhcDigi+hllhcReco)
+    hllhcSimFraction=(1.0-genFractionOfSim)*hllhcSim/(hllhcSim+hllhcDigi+hllhcReco)
+
+    lhcFraction= lhc_mc_cpu_time[i] / (lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i])
+
+    totalT1T2 = total_cpu_time[i] - data_cpu_time[i]
+    
+    totGenFraction = (lhcGenFraction*lhcFraction + hllhcGenFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
+    totSimFraction = (lhcSimFraction*lhcFraction + hllhcSimFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
+    totDigiFraction = (lhcDigiFraction*lhcFraction + hllhcDigiFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
+    totRecoFraction = (lhcRecoFraction*lhcFraction + hllhcRecoFraction*(1.0-lhcFraction))*(lhc_mc_cpu_time[i] + hllhc_mc_cpu_time[i]) / totalT1T2
+
+    rerecoFraction = rereco_cpu_time[i] / totalT1T2
+    analysisFraction = analysis_cpu_time[i] / totalT1T2
+    promptFraction = 0.
+    print(i,
+    ' {:04.3f}'.format(promptFraction),
+    ' {:04.3f}'.format(rerecoFraction),
+    ' {:04.3f}'.format(totGenFraction),
+    ' {:04.3f}'.format(totSimFraction),
+    ' {:04.3f}'.format(totDigiFraction+totRecoFraction),
+    ' {:04.3f}'.format(analysisFraction))
+
+
 # Plot the HS06
 
 # Squirt the dictionary entries into lists:
@@ -406,6 +463,7 @@ if modelNames is not None:
         pngKeyName=pngKeyName+'_'+m.split('/')[-1].split('.')[0]
 
 
+plotMaxs=model['plotMaximums']
 
 cpuFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
                              'Prompt Data' : cpuDataList,
@@ -425,10 +483,10 @@ handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
 labels=labels[::-1]
 ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
-
+ax.set_ylim(ymax=plotMaxs['CPUByType'])
 fig = ax.get_figure()
 fig.tight_layout()
-fig.savefig('CPUByType_'+pngKeyName+'.png') 
+fig.savefig('CPUByType'+pngKeyName+'.png') 
 
 cpuCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
                              'Prompt Data' : cpuDataList,
@@ -447,11 +505,13 @@ cpuCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC',
                       'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax,colormap='Paired')
 ax.set(ylabel='MHS06')
 ax.set(title='CPU by Type and Capacity')
-
+ax.set_ylim(ymax=plotMaxs['CPUByTypeAndCapacity'])
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
 labels=labels[::-1]
 ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
+
+
 
 fig = ax.get_figure()
 fig.tight_layout()
@@ -497,6 +557,7 @@ cpuTimeFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
 ax = cpuTimeFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,colormap='Paired')
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type')
+ax.set_ylim(ymax=plotMaxs['CPUSecondsByType'])
 
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
@@ -524,6 +585,7 @@ cpuTimeCapacityFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',lines
 cpuTimeCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax,colormap='Paired')
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type and Capacity')
+ax.set_ylim(ymax=plotMaxs['CPUSecondsByTypeAndCapacity'])
 
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]

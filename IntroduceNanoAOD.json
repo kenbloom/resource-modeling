@@ -1,17 +1,29 @@
 { "storage_model" :
- { "disk_replicas": {
-   "AOD" : [0.4,0.4,0.4,0.25,0.1],
-   "MINIAOD": [ 3,2.5,2.5,2.5, 1 ], 
-   "USER": [ 45,15,10 ],
-   "NANOAOD": [3,3,3,3,2]
+ { "disk_scaling": {
+   "AOD" : { "2016": 1.0,
+             "2025": 0.5,
+	     "2050": 0.5
+           },
+   "MINIAOD" : { "2016": 1.0,
+                 "2025": 0.5,
+		 "2050": 0.5
+               },
+   "USER" : { "2016": 1.0,
+              "2025": 0.5,
+	      "2050": 0.5
+            },
+   "NANOAOD" : { "2016": 0.0,
+                 "2025": 1.0,
+		 "2050": 1.0
+               }
   },
-  "tape_replicas": {
-   "NANOAOD": [1,1,1,1,1]
-  }, 
-  "versions" : {
-  "NANOAOD": [10,2,2,1,1]
+  "tape_scaling" : {
+   "NANOAOD" : { "2016": 0.0,
+                 "2025": 1.0,
+		 "2050": 1.0
+               }
   }
  },
- "AnalysisReadsPerYearData" : 40,
- "AnalysisReadsPerYearMC" : 20
+ "AnalysisReadsPerYearData" : { "2016": 80, "2025": 40, "2050" : 40},
+ "AnalysisReadsPerYearMC" : { "2016": 40, "2025": 20, "2050" : 20}
 }
