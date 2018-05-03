@@ -135,11 +135,14 @@ for year in YEARS:
     # Add static (or nearly) data
     for tier, spaces in model['static_disk'].items():
         size, producedYear = time_dependent_value(year=year, values=spaces)
+#        print(tier,size,producedYear)
+        if producedYear < YEARS[0]: producedYear=YEARS[0]
         dataOnDisk[year]['Other'][tier] += size
         diskSamples[year].append([producedYear, 'Other', tier, size])
         diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size / PETA
     for tier, spaces in model['static_tape'].items():
         size, producedYear = time_dependent_value(year=year, values=spaces)
+        if producedYear < YEARS[0]: producedYear=YEARS[0]
         dataOnTape[year]['Other'][tier] += size
         tapeSamples[year].append([producedYear, 'Other', tier, size])
         tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size / PETA
@@ -207,13 +210,15 @@ if 'legacyInfoDict' in model:
         diskByTier[YEARS.index(int(year))][TierColumns.index('Run1 & 2015')] = val
         diskByYear[YEARS.index(int(year))][YearColumns.index('Run1 & 2015')] = val
 else:
-    diskByTier[YEARS.index(2016)][TierColumns.index('Run1 & 2015')] = 25
+    if 2016 in YEARS:
+        diskByTier[YEARS.index(2016)][TierColumns.index('Run1 & 2015')] = 25
     diskByTier[YEARS.index(2017)][TierColumns.index('Run1 & 2015')] = 25
     diskByTier[YEARS.index(2018)][TierColumns.index('Run1 & 2015')] = 10
     diskByTier[YEARS.index(2019)][TierColumns.index('Run1 & 2015')] = 5
     diskByTier[YEARS.index(2020)][TierColumns.index('Run1 & 2015')] = 0
     
-    diskByYear[YEARS.index(2016)][YearColumns.index('Run1 & 2015')] = 25
+    if 2016 in YEARS:
+        diskByYear[YEARS.index(2016)][YearColumns.index('Run1 & 2015')] = 25
     diskByYear[YEARS.index(2017)][YearColumns.index('Run1 & 2015')] = 25
     diskByYear[YEARS.index(2018)][YearColumns.index('Run1 & 2015')] = 10
     diskByYear[YEARS.index(2019)][YearColumns.index('Run1 & 2015')] = 5
@@ -225,17 +230,19 @@ if modelNames is not None:
         keyName=keyName+'_'+m.split('/')[-1].split('.')[0]
 plotMaxs=model['plotMaximums']
 
+minYearVal=max(0,model['minYearToPlot']-YEARS[0])-0.5 #pandas...
 
-plotStorage(producedByTier, name='ProducedbyTier'+keyName+'.png', title='Data produced by tier', columns=TIERS, index=YEARS, maximum=plotMaxs['ProducedbyTier'])
+plotStorage(producedByTier, name='ProducedbyTier'+keyName+'.png', title='Data produced by tier', columns=TIERS, index=YEARS, maximum=plotMaxs['ProducedbyTier'],minYear=minYearVal)
+
 
 plotStorageWithCapacity(tapeByTier, name='TapebyTier'+keyName+'.png', title='Data on tape by tier', columns=TierColumns,
-                        bars=TIERS + STATIC_TIERS, maximum=plotMaxs['TapebyTier'])
+                        bars=TIERS + STATIC_TIERS, maximum=plotMaxs['TapebyTier'],minYear=minYearVal)
 plotStorageWithCapacity(diskByTier, name='DiskbyTier'+keyName+'.png', title='Data on disk by tier', columns=TierColumns,
-                        bars=TIERS + STATIC_TIERS, maximum=plotMaxs['DiskbyTier'])
+                        bars=TIERS + STATIC_TIERS, maximum=plotMaxs['DiskbyTier'],minYear=minYearVal)
 plotStorageWithCapacity(tapeByYear, name='TapebyYear'+keyName+'.png', title='Data on tape by year produced', columns=YearColumns,
-                        bars=YEARS + ['Run1 & 2015'], maximum=plotMaxs['TapebyTier'])
+                        bars=YEARS + ['Run1 & 2015'], maximum=plotMaxs['TapebyTier'],minYear=minYearVal)
 plotStorageWithCapacity(diskByYear, name='DiskbyYear'+keyName+'.png', title='Data on disk by year produced', columns=YearColumns,
-                        bars=YEARS + ['Run1 & 2015'], maximum=plotMaxs['DiskbyYear'])
+                        bars=YEARS + ['Run1 & 2015'], maximum=plotMaxs['DiskbyYear'],minYear=minYearVal)
 
 # Dump out tuples of all the data on tape and disk in a given year
 with open('disk_samples.json', 'w') as diskUsage, open('tape_samples.json', 'w') as tapeUsage:
