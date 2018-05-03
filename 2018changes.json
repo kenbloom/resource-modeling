@@ -133,7 +133,13 @@
   }
  },
  "legacyInfoDict" : { "2016":10 , "2017":5 , "2018":5 , "2019":5 },
- "first_year_to_spread_rereco_over_two_years" : 2022 		
+ "first_year_to_spread_rereco_over_two_years" : 2022,
+ "static_disk": {
+  "Ops space": {
+   "2016": 1.3e+16, 
+   "2026": 13.0e+16
+  } 
+ } 		
 
 } 
 
