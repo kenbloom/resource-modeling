@@ -491,6 +491,8 @@ handles=handles[::-1]
 labels=labels[::-1]
 ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
 ax.set_ylim(ymax=plotMaxs['CPUByType'])
+minYearVal=max(0,model['minYearToPlot']-YEARS[0])-0.5 #pandas...
+ax.set_xlim(ymax=minYearVal)
 fig = ax.get_figure()
 fig.tight_layout()
 fig.savefig('CPUByType'+pngKeyName+'.png') 
@@ -513,6 +515,7 @@ cpuCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC',
 ax.set(ylabel='MHS06')
 ax.set(title='CPU by Type and Capacity')
 ax.set_ylim(ymax=plotMaxs['CPUByTypeAndCapacity'])
+ax.set_xlim(ymax=minYearVal)
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
 labels=labels[::-1]
@@ -565,6 +568,7 @@ ax = cpuTimeFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC M
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type')
 ax.set_ylim(ymax=plotMaxs['CPUSecondsByType'])
+ax.set_xlim(ymax=minYearVal)
 
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
@@ -593,6 +597,7 @@ cpuTimeCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LH
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type and Capacity')
 ax.set_ylim(ymax=plotMaxs['CPUSecondsByTypeAndCapacity'])
+ax.set_xlim(ymax=minYearVal)
 
 handles, labels = ax.get_legend_handles_labels()
 handles=handles[::-1]
