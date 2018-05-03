@@ -304,12 +304,13 @@ hpc_cpu_time = {i: rereco_cpu_time[i] +
 cpu_improvement_factor = model['improvement_factors']['hardware']
 cpu_improvement = {i : cpu_improvement_factor ** (i-2017) for i in YEARS}
 
-cpu_capacity = {2015 : 1.4 * mega}
+#YUCK - I don't know how to get around this hardwired thingy
+cpu_capacity = {YEARS[0]-1 : 1.4 * mega}
 
 # This variable assumes that you can have the cpu_capacity for an entire
 # year and thus calculates the HS06 * s available (in principle).
 
-cpu_time_capacity = {2015 : 1.4 * mega}
+cpu_time_capacity = {YEARS[0]-1 : 1.4 * mega}
 
 retirement_rate = 0.05
 
@@ -317,8 +318,8 @@ for i in YEARS:
     cpu_capacity[i] = cpu_capacity[i-1] * (1 - retirement_rate) + (300 if i < 2020 else 600) * kilo * cpu_improvement[i]
     cpu_time_capacity[i] = cpu_capacity[i] * seconds_per_year
 
-del cpu_capacity[2015]
-del cpu_time_capacity[2015]
+del cpu_capacity[YEARS[0]-1]
+del cpu_time_capacity[YEARS[0]-1]
 
 # CPU capacity model ala data.py
 
@@ -458,8 +459,11 @@ cpuCapacityList = []
 for year, item in sorted(cpu_capacity.items()):
     cpuCapacityList.append(item/mega)
 altCapacityList = []
+print (cpu_capacity)
+print (cpuCapacity)
 for year, item in sorted(cpuCapacity.items()):
-    altCapacityList.append(item/mega)
+    if int(year) in cpu_capacity:
+        altCapacityList.append(item/mega)
 
 # Build a data frame from lists:
 
@@ -491,6 +495,7 @@ labels=labels[::-1]
 ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
 ax.set_ylim(ymax=plotMaxs['CPUByType'])
 minYearVal=max(0,model['minYearToPlot']-YEARS[0])-0.5 #pandas...
+
 ax.set_xlim(xmin=minYearVal)
 fig = ax.get_figure()
 fig.tight_layout()
@@ -550,7 +555,8 @@ for year, item in sorted(cpu_time_capacity.items()):
     cpuCapacityTimeList.append(item/tera)
 altCapacityTimeList = []
 for year, item in sorted(cpuTimeCapacity.items()):
-    altCapacityTimeList.append(item/tera)
+    if int(year) in cpu_time_capacity:
+        altCapacityTimeList.append(item/tera)
 
 # Build a data frame from lists:
 
