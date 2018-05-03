@@ -417,11 +417,17 @@ cpuFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
 
 
 ax = cpuFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC',
-                   'Analysis']].plot(x='Year',kind='bar',stacked=True)
+                   'Analysis']].plot(x='Year',kind='bar',stacked=True,colormap='Paired')
 ax.set(ylabel='MHS06')
 ax.set(title='CPU by Type')
 
+handles, labels = ax.get_legend_handles_labels()
+handles=handles[::-1]
+labels=labels[::-1]
+ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
+
 fig = ax.get_figure()
+fig.tight_layout()
 fig.savefig('CPUByType_'+pngKeyName+'.png') 
 
 cpuCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
@@ -438,11 +444,17 @@ cpuCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
 ax = cpuCapacityFrame[['Year','Capacity, 5% retirement']].plot(x='Year',linestyle='-',marker='o', color='Red')
 cpuCapacityFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',linestyle='-',marker='o', color='Blue',ax=ax)
 cpuCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC',
-                      'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax)
+                      'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax,colormap='Paired')
 ax.set(ylabel='MHS06')
 ax.set(title='CPU by Type and Capacity')
 
+handles, labels = ax.get_legend_handles_labels()
+handles=handles[::-1]
+labels=labels[::-1]
+ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
+
 fig = ax.get_figure()
+fig.tight_layout()
 fig.savefig('CPUByTypeAndCapacity'+pngKeyName+'.png')
 
 # Do the same thing for the HS06 * d
@@ -482,11 +494,17 @@ cpuTimeFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
                             )
 
 
-ax = cpuTimeFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True)
+ax = cpuTimeFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,colormap='Paired')
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type')
 
+handles, labels = ax.get_legend_handles_labels()
+handles=handles[::-1]
+labels=labels[::-1]
+ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
+
 fig = ax.get_figure()
+fig.tight_layout()
 fig.savefig('CPUSecondsByType'+pngKeyName+'.png')
 
 
@@ -503,11 +521,17 @@ cpuTimeCapacityFrame = pd.DataFrame({'Year': [str(year) for year in YEARS],
 
 ax = cpuTimeCapacityFrame[['Year','Capacity, 5% retirement']].plot(x='Year',linestyle='-',marker='o', color='Red')
 cpuTimeCapacityFrame[['Year','Capacity, 5 year retirement']].plot(x='Year',linestyle='-',marker='o', color='Blue',ax=ax)
-cpuTimeCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax)
+cpuTimeCapacityFrame[['Year', 'Prompt Data', 'Non-Prompt Data', 'LHC MC', 'HL-LHC MC', 'Analysis']].plot(x='Year',kind='bar',stacked=True,ax=ax,colormap='Paired')
 ax.set(ylabel='THS06 * s')
 ax.set(title='CPU seconds by Type and Capacity')
 
+handles, labels = ax.get_legend_handles_labels()
+handles=handles[::-1]
+labels=labels[::-1]
+ax.legend(handles,labels,loc='best', markerscale=0.25, fontsize=11)
+
 fig = ax.get_figure()
+fig.tight_layout()
 fig.savefig('CPUSecondsByTypeAndCapacity'+pngKeyName+'.png')
 
 
