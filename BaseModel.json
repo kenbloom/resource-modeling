@@ -40,5 +40,8 @@
 		    "ProducedbyTier": 1200.0,
 		    "TapebyTier": 7000.0,
 		    "TapebyYear": 7000.0
- 		    }
+ 		    },
+ "us_fraction_T1T2" : 0.4,
+ "tape_fraction_T0" : 0.345,
+ "disk_fraction_T0" : 0.176
 }

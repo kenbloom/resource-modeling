@@ -284,6 +284,24 @@ for year in YEARS:
     line += '{:8.2f}'.format(total*0.4)
     print(line)
 
+# two new lines needed for 2018
+us_fraction=model['us_fraction_T1T2']
+tape_fraction_T0=model['tape_fraction_T0']
+disk_fraction_T0=model['disk_fraction_T0']
+
+print("Year","\t"," US Disk","\t"," US Tape")
+for year in YEARS:
+    totalDisk=0
+    totalTape=0
+    for column in TIERS + STATIC_TIERS:
+        totalDisk += diskByTier[YEARS.index(year)][TierColumns.index(column)]
+        totalTape += tapeByTier[YEARS.index(year)][TierColumns.index(column)]
+
+    print(year,'\t','{:8.2f}'.format(totalDisk*us_fraction*(1.0-disk_fraction_T0)),'\t',
+               '{:8.2f}'.format(totalTape*us_fraction*(1.0-tape_fraction_T0)),
+          )
+
+
 '''
 AOD:
 current year: 1 version, fraction on disk, complete on tape

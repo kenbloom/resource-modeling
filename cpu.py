@@ -106,8 +106,10 @@ rereco_cpu_required = {i : (1.0/ cpu_efficiency)*max(0.25 * data_events[i] * rec
                          for i in YEARS}
 
 # But the total time needed is the sum of both activities.
-    
+
 rereco_cpu_time = {i : (1.25 * data_events[i] * reco_time[i]) for i in YEARS}
+rereco_events = {i : 1.25*data_events[i] for i in YEARS}
+
 # The corresponding MC, on the other hand, can be reconstructed over an
 # entire year.  We can use this to calculate the HS06 needed to do those
 # tasks.
@@ -385,9 +387,10 @@ for i in YEARS:
 
 
 print("Fraction of CPU required for T1/T2 activities")
-print("Year Prompt Rereco    Gen    Sim SimReco Analysis")
+print("Year\t Prmpt\t Rreco\tGen\tSim\tSimReco\t Anal\t USCPU")
 
 genFractionOfSim=0.05
+us_fraction=model['us_fraction_T1T2']
 
 for i in YEARS:
     #first some calculations we didn't do before
@@ -420,13 +423,17 @@ for i in YEARS:
     rerecoFraction = rereco_cpu_time[i] / totalT1T2
     analysisFraction = analysis_cpu_time[i] / totalT1T2
     promptFraction = 0.
-    print(i,
-    ' {:04.3f}'.format(promptFraction),
-    ' {:04.3f}'.format(rerecoFraction),
-    ' {:04.3f}'.format(totGenFraction),
-    ' {:04.3f}'.format(totSimFraction),
-    ' {:04.3f}'.format(totDigiFraction+totRecoFraction),
-    ' {:04.3f}'.format(analysisFraction))
+    uscpu= totalT1T2*us_fraction/tera
+
+    print(i,'\t',
+    '{:04.3f}'.format(promptFraction),'\t',
+    '{:04.3f}'.format(rerecoFraction),'\t',
+    '{:04.3f}'.format(totGenFraction),'\t',
+    '{:04.3f}'.format(totSimFraction),'\t',
+    '{:04.3f}'.format(totDigiFraction+totRecoFraction),'\t',
+    '{:04.3f}'.format(analysisFraction),'\t',
+    '{:04.2f}'.format(uscpu),'\t'
+    )
 
 
 # Plot the HS06
