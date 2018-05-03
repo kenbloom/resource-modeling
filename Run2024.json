@@ -1,3 +1,15 @@
 {
- "end_year": 2024
+ "end_year": 2024, 
+ "plotMaximums" : { "CPUByType" : 3.5,
+ 		    "CPUByTypeAndCapacity": 7.0,
+		    "CPUSecondsByType": 100.0,
+		    "CPUSecondsByTypeAndCapacity": 100.0,
+		    "DiskbyTier": 300.0,
+		    "DiskbyYear": 300.0,
+		    "ProducedbyTier": 60.0,
+		    "TapebyTier": 400.0,
+		    "TapebyYear": 400.0
+ 		    }
+
+
 }
