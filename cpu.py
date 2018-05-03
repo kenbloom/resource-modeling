@@ -108,7 +108,7 @@ rereco_cpu_required = {i : (1.0/ cpu_efficiency)*max(0.25 * data_events[i] * rec
 # But the total time needed is the sum of both activities.
 
 rereco_cpu_time = {i : (1.25 * data_events[i] * reco_time[i]) for i in YEARS}
-rereco_events = {i : 1.25*data_events[i] for i in YEARS}
+    
 
 # The corresponding MC, on the other hand, can be reconstructed over an
 # entire year.  We can use this to calculate the HS06 needed to do those
