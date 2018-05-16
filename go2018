@@ -1,0 +1,26 @@
+
+# CPU scripts
+# this is the 2017 result
+python cpu.py RelyOnMiniAOD.json
+python cpu.py RelyOnMiniAOD.json Run2024.json
+# this is the no NANOAOD version of the 2018 result
+python cpu.py RelyOnMiniAOD.json Analysis.json 2018changes.json
+python cpu.py RelyOnMiniAOD.json Analysis.json 2018changes.json Run2024.json
+# this is the NANOAOD version of the 2018 result
+# (note that order is important..)
+python cpu.py RelyOnMiniAOD.json Analysis.json 2018changes.json IntroduceNanoAOD.json 
+python cpu.py RelyOnMiniAOD.json Analysis.json 2018changes.json IntroduceNanoAOD.json Run2024.json
+
+
+# DATA scripts
+# this is the 2017 result
+python data.py RelyOnMiniAOD.json
+python data.py RelyOnMiniAOD.json Run2024.json
+# this is the no NANOAOD version of the 2018 result
+python data.py RelyOnMiniAOD.json 2018changes.json
+python data.py RelyOnMiniAOD.json 2018changes.json Run2024.json
+# this is the NANOAOD version of the 2018 result
+# (note that order is important..)
+python data.py RelyOnMiniAOD.json 2018changes.json IntroduceNanoAOD.json
+python data.py RelyOnMiniAOD.json 2018changes.json IntroduceNanoAOD.json Run2024.json
+

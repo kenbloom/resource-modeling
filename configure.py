@@ -16,6 +16,13 @@ from utils import time_dependent_value
 
 SECONDS_PER_YEAR = 365.25 * 24 * 3600
 
+def updateDict(target,changes):
+    for k,v in changes.items():
+        if k in target and isinstance(target[k],dict):
+            updateDict(target[k],v)
+        else:
+            target[k]=v
+
 
 def configure(modelName):
     modelNames = ['BaseModel.json', 'RealisticModel.json']
@@ -27,9 +34,11 @@ def configure(modelName):
 
     model = {}
     for modelName in modelNames:
+        print(modelName)
         with open(modelName, 'r') as modelFile:
             modelChanges = json.load(modelFile)
-            model.update(modelChanges)
+            updateDict(model,modelChanges)
+#            model.update(modelChanges)
 
     return model
 

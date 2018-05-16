@@ -85,13 +85,18 @@ tapeSamples = defaultdict(list)
 
 diskCopies = {}
 tapeCopies = {}
+diskScaleFactorByYear={"Run1 & 2015" : {"2000": 1.0, "2050" : 1.0} }
+tapeScaleFactorByYear={"Run1 & 2015" : {"2000": 1.0, "2050" : 1.0} }
 for tier in TIERS:
     diskCopies[tier] = [versions * replicas for versions, replicas in
                         zip(model['storage_model']['versions'][tier], model['storage_model']['disk_replicas'][tier])]
-    # Assume we have the highest number of versions in year 1, save n replicas of that
-    tapeCopies[tier] = model['storage_model']['versions'][tier][0] * model['storage_model']['tape_replicas'][tier]
-    print(tier,tapeCopies[tier])
+    tapeCopies[tier] = [versions * replicas for versions, replicas in
+                        zip(model['storage_model']['versions'][tier], model['storage_model']['tape_replicas'][tier])]
     if not tapeCopies[tier]: tapeCopies[tier] = [0, 0, 0]
+    diskScaleFactorByYear[tier] = model['storage_model']['disk_scaling'].get(tier,None)
+    tapeScaleFactorByYear[tier] = model['storage_model']['tape_scaling'].get(tier,None)
+    if diskScaleFactorByYear[tier] is None: diskScaleFactorByYear[tier]={"2000": 1.0, "2050" : 1.0}
+    if tapeScaleFactorByYear[tier] is None: tapeScaleFactorByYear[tier]={"2000": 1.0, "2050" : 1.0}
 
 # Loop over years to determine how much is produced without versions or replicas
 for year in YEARS:
@@ -103,7 +108,7 @@ for year in YEARS:
             mcEvents = mc_event_model(model, year)
             for kind, events in mcEvents.items():
                 dummyCPU, tierSize = performance_by_year(model, year, tier, data_type='mc', kind=kind)
-                dataProduced[year]['mc'][tier] += tierSize * events
+                dataProduced[year]['mc'][tier] += tierSize * events 
 
 producedByTier = [[0 for _i in range(len(TIERS))] for _j in YEARS]
 for year, dataDict in dataProduced.items():
@@ -112,22 +117,34 @@ for year, dataDict in dataProduced.items():
             producedByTier[YEARS.index(year)][TIERS.index(tier)] += size / PETA
 
 # Initialize a matrix with tiers and years
-YearColumns = YEARS + ['Capacity', 'Year', 'Run1 & 2']  # Add capacity, years as columns for data frame
+YearColumns = YEARS + ['Capacity', 'Year', 'Run1 & 2015']  # Add capacity, years as columns for data frame
 
 # Initialize a matrix with years and years
 diskByYear = [[0 for _i in YearColumns] for _j in YEARS]
 tapeByYear = [[0 for _i in YearColumns] for _j in YEARS]
 
+
+#Simple factors inspired by spreadsheet for how "efficiently" we use disk and tape
+#two components - 1 a simple "filling" factor - eg, DDM fills X% of the disk
+#                 2 buffer space at the Tier1s (tier-2s are handled below) 
+disk_fill_factor = (1.0 / model['disk_fill_factor']) * ( model['tier1_disk_fraction']*(1.0 + model['tier1_disk_buffer_fraction']) +  (1.0 - model['tier1_disk_fraction'] ) )
+tape_fill_factor = 1.0/ model['tape_fill_factor']
+
 # Loop over years to determine how much is saved
+copies_on_disk={}
+tiers_on_disk={}
 for year in YEARS:
     # Add static (or nearly) data
     for tier, spaces in model['static_disk'].items():
         size, producedYear = time_dependent_value(year=year, values=spaces)
+#        print(tier,size,producedYear)
+        if producedYear < YEARS[0]: producedYear=YEARS[0]
         dataOnDisk[year]['Other'][tier] += size
         diskSamples[year].append([producedYear, 'Other', tier, size])
         diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size / PETA
     for tier, spaces in model['static_tape'].items():
         size, producedYear = time_dependent_value(year=year, values=spaces)
+        if producedYear < YEARS[0]: producedYear=YEARS[0]
         dataOnTape[year]['Other'][tier] += size
         tapeSamples[year].append([producedYear, 'Other', tier, size])
         tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size / PETA
@@ -136,29 +153,38 @@ for year in YEARS:
     for producedYear, dataDict in dataProduced.items():
         for dataType, tierDict in dataDict.items():
             for tier, size in tierDict.items():
+                # allow there to be some time dependence in the replicas
+                scaleDisk,ty = time_dependent_value(year=producedYear,values=diskScaleFactorByYear[tier])
+                scaleTape,ty = time_dependent_value(year=producedYear,values=tapeScaleFactorByYear[tier])
                 diskCopiesByDelta = diskCopies[tier]
                 tapeCopiesByDelta = tapeCopies[tier]
                 if int(producedYear) <= int(year):  # Can't save data for future years
+                    if int(producedYear) == int(year):
+                        if tier != "USER" and tier!="GENSIM" and tier!="RAW":
+                            tiers_on_disk[year]=tiers_on_disk.get(year,0)+1
+                            copies_on_disk[year]=copies_on_disk.get(year,0)+diskCopiesByDelta[0]*scaleDisk
                     if year - producedYear >= len(diskCopiesByDelta):
                         revOnDisk = diskCopiesByDelta[-1]  # Revisions = versions * copies
-                        revOnTape = tapeCopiesByDelta[-1]  # Assume what we have for the last year is good for out years
                     elif in_shutdown(model, year):
                         inShutdown, lastRunningYear = in_shutdown(model, year)
                         revOnDisk = diskCopiesByDelta[lastRunningYear - producedYear]
-                        revOnTape = tapeCopiesByDelta[lastRunningYear - producedYear]
                     else:
                         revOnDisk = diskCopiesByDelta[year - producedYear]
+                    if year - producedYear >= len(tapeCopiesByDelta):
+                        revOnTape = tapeCopiesByDelta[-1]  # Assume what we have for the last year is good for out years
+                    elif in_shutdown(model, year):
+                        inShutdown, lastRunningYear = in_shutdown(model, year)
+                        revOnTape = tapeCopiesByDelta[lastRunningYear - producedYear]
+                    else:
                         revOnTape = tapeCopiesByDelta[year - producedYear]
                     if size and revOnDisk:
-                        dataOnDisk[year][dataType][tier] += size * revOnDisk
-                        diskSamples[year].append([producedYear, dataType, tier, size * revOnDisk, revOnDisk])
-                        diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnDisk / PETA
+                        dataOnDisk[year][dataType][tier] += size * revOnDisk * disk_fill_factor *scaleDisk
+                        diskSamples[year].append([producedYear, dataType, tier, size * revOnDisk * disk_fill_factor * scaleDisk, revOnDisk])
+                        diskByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnDisk * disk_fill_factor * scaleDisk/ PETA
                     if size and revOnTape:
-                        dataOnTape[year][dataType][tier] += size * revOnTape
-                        tapeSamples[year].append([producedYear, dataType, tier, size * revOnTape, revOnTape])
-                        tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape / PETA
-                    if tier == "MINIAOD":
-                        print(year,producedYear,tier,diskCopiesByDelta,revOnDisk)
+                        dataOnTape[year][dataType][tier] += size * revOnTape * scaleTape
+                        tapeSamples[year].append([producedYear, dataType, tier, size * revOnTape * tape_fill_factor * scaleTape, revOnTape])
+                        tapeByYear[YEARS.index(year)][YEARS.index(producedYear)] += size * revOnTape * tape_fill_factor * scaleTape/ PETA
     # Add capacity numbers
     diskByYear[YEARS.index(year)][YearColumns.index('Capacity')] = diskCapacity[str(year)] / PETA
     diskByYear[YEARS.index(year)][YearColumns.index('Year')] = str(year)
@@ -184,31 +210,45 @@ for year, dataDict in dataOnTape.items():
     tapeByTier[YEARS.index(year)][TierColumns.index('Capacity')] = tapeCapacity[str(year)] / PETA
     tapeByTier[YEARS.index(year)][TierColumns.index('Year')] = str(year)
 
-diskByTier[YEARS.index(2017)][TierColumns.index('Run1 & 2')] = 25
-diskByTier[YEARS.index(2018)][TierColumns.index('Run1 & 2')] = 10
-diskByTier[YEARS.index(2019)][TierColumns.index('Run1 & 2')] = 5
-diskByTier[YEARS.index(2020)][TierColumns.index('Run1 & 2')] = 0
 
-diskByYear[YEARS.index(2017)][YearColumns.index('Run1 & 2')] = 25
-diskByYear[YEARS.index(2018)][YearColumns.index('Run1 & 2')] = 10
-diskByYear[YEARS.index(2019)][YearColumns.index('Run1 & 2')] = 5
-diskByYear[YEARS.index(2020)][YearColumns.index('Run1 & 2')] = 0
+if 'legacyInfoDict' in model:
+    for year,val in model['legacyInfoDict'].items():
+        diskByTier[YEARS.index(int(year))][TierColumns.index('Run1 & 2015')] = val
+        diskByYear[YEARS.index(int(year))][YearColumns.index('Run1 & 2015')] = val
+else:
+    if 2016 in YEARS:
+        diskByTier[YEARS.index(2016)][TierColumns.index('Run1 & 2015')] = 25
+    diskByTier[YEARS.index(2017)][TierColumns.index('Run1 & 2015')] = 25
+    diskByTier[YEARS.index(2018)][TierColumns.index('Run1 & 2015')] = 10
+    diskByTier[YEARS.index(2019)][TierColumns.index('Run1 & 2015')] = 5
+    diskByTier[YEARS.index(2020)][TierColumns.index('Run1 & 2015')] = 0
+    
+    if 2016 in YEARS:
+        diskByYear[YEARS.index(2016)][YearColumns.index('Run1 & 2015')] = 25
+    diskByYear[YEARS.index(2017)][YearColumns.index('Run1 & 2015')] = 25
+    diskByYear[YEARS.index(2018)][YearColumns.index('Run1 & 2015')] = 10
+    diskByYear[YEARS.index(2019)][YearColumns.index('Run1 & 2015')] = 5
+    diskByYear[YEARS.index(2020)][YearColumns.index('Run1 & 2015')] = 0
 
 keyName=''
 if modelNames is not None:
     for m in modelNames:
         keyName=keyName+'_'+m.split('/')[-1].split('.')[0]
+plotMaxs=model['plotMaximums']
 
-plotStorage(producedByTier, name='ProducedbyTier'+keyName+'.png', title='Data produced by tier', columns=TIERS, index=YEARS)
+minYearVal=max(0,model['minYearToPlot']-YEARS[0])-0.5 #pandas...
+
+plotStorage(producedByTier, name='ProducedbyTier'+keyName+'.png', title='Data produced by tier', columns=TIERS, index=YEARS, maximum=plotMaxs['ProducedbyTier'],minYear=minYearVal)
+
 
 plotStorageWithCapacity(tapeByTier, name='TapebyTier'+keyName+'.png', title='Data on tape by tier', columns=TierColumns,
-                        bars=TIERS + STATIC_TIERS)
+                        bars=TIERS + STATIC_TIERS, maximum=plotMaxs['TapebyTier'],minYear=minYearVal)
 plotStorageWithCapacity(diskByTier, name='DiskbyTier'+keyName+'.png', title='Data on disk by tier', columns=TierColumns,
-                        bars=TIERS + STATIC_TIERS)
+                        bars=TIERS + STATIC_TIERS, maximum=plotMaxs['DiskbyTier'],minYear=minYearVal)
 plotStorageWithCapacity(tapeByYear, name='TapebyYear'+keyName+'.png', title='Data on tape by year produced', columns=YearColumns,
-                        bars=YEARS + ['Run1 & 2'])
+                        bars=YEARS + ['Run1 & 2015'], maximum=plotMaxs['TapebyTier'],minYear=minYearVal)
 plotStorageWithCapacity(diskByYear, name='DiskbyYear'+keyName+'.png', title='Data on disk by year produced', columns=YearColumns,
-                        bars=YEARS + ['Run1 & 2'])
+                        bars=YEARS + ['Run1 & 2015'], maximum=plotMaxs['DiskbyYear'],minYear=minYearVal)
 
 # Dump out tuples of all the data on tape and disk in a given year
 with open('disk_samples.json', 'w') as diskUsage, open('tape_samples.json', 'w') as tapeUsage:
@@ -256,6 +296,28 @@ for year in YEARS:
     line += '{:8.2f}'.format(total)
     line += '{:8.2f}'.format(total*0.4)
     print(line)
+
+# two new lines needed for 2018
+us_fraction=model['us_fraction_T1T2']
+tape_fraction_T0=model['tape_fraction_T0']
+disk_fraction_T0=model['disk_fraction_T0']
+
+print("Year","\t"," US Disk","\t"," US Tape\tCopies")
+for year in YEARS:
+    totalDisk=0
+    totalTape=0
+    nCopies=copies_on_disk[year]/float(tiers_on_disk[year])
+    for column in TIERS + STATIC_TIERS:
+        totalDisk += diskByTier[YEARS.index(year)][TierColumns.index(column)]
+        totalTape += tapeByTier[YEARS.index(year)][TierColumns.index(column)]
+
+    print(year,'\t','{:8.2f}'.format(totalDisk*us_fraction*(1.0-disk_fraction_T0)),'\t',
+               '{:8.2f}'.format(totalTape*us_fraction*(1.0-tape_fraction_T0)),'\t',
+          '{:4.2f}'.format(nCopies),'\t',
+          '{:4.2f}'.format(us_fraction*nCopies)
+
+          )
+
 
 '''
 AOD:
